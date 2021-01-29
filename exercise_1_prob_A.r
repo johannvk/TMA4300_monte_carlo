@@ -91,7 +91,8 @@ test.f.A.sample = function(N = 100000,
        xlim=c(-5, 5), ylim=c(0, test.f.density(0.0)))
   curve(test.f.density, add=T)
 }
-test.f.A.sample(alpha=1.5)
+# Samle funksjonene vi vil kjøre til slutt i en "main"-fil?
+# test.f.A.sample(alpha=1.5)
 
 
 ################ Problem A 4: ################
