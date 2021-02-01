@@ -41,7 +41,7 @@ gamma.B.1.sample = function(n, alpha) {
 }
 
 
-################ Problem B 1: ################
+################ Problem B 2: ################
 
 gamma.B.2.sample = function(n, alpha) {
   # Generate 'n' samples from a gamma(x | alpha, beta=1) 
@@ -122,3 +122,24 @@ test.gamma.B.2.sample = function() {
 
 # display.attempts.per.sample()
 # test.gamma.B.2.sample()
+
+
+################ Problem B 3: ################
+
+gamma.B.3.sample = function(n, alpha) {
+  # Sample from a Gamma(alpha, beta=1) distribution,
+  # (where alpha is an integer?)
+  # Fractional part taken care of by gamma.B.1.sample.
+  int_alpha = floor(alpha)
+  frac_alpha = alpha - int_alpha
+  
+  # Add up samples from distribution gamma(alpha=1, beta=1) = Exp(1).
+  x = unlist(Map(function(x) sum(exp.A.1.sample(int_alpha, lambda=1)), 
+                 1:n))
+  x = x + gamma.B.1.sample(n, alpha=frac_alpha)
+  return(x)
+}
+alpha_t = 8.5
+gamma_xs = gamma.B.3.sample(10000, alpha_t)
+mean(gamma_xs)
+hist(gamma_xs, breaks=100, probability=T)

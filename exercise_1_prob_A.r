@@ -1,6 +1,6 @@
 
 ################ Problem A 1: ################
-our.exp.sample = function(n, lambda) {
+exp.A.1.sample = function(n, lambda) {
   # Generates 'n' samples from the Exponential 
   # distribution f(x) = lambda*exp(-lambda*x), x>0.
   xs = -(1.0/lambda)*log(runif(n))
@@ -63,7 +63,7 @@ test.g.A.sample = function(alpha=0.7, breaks=200) {
   curve(test.g.density, from=0.0, to=3.0, n=2000, add=T, 
         ylab="Problem A: g-density")  
 }
-test.g.A.sample()
+# test.g.A.sample()
 
 
 ################ Problem A 3: ################
