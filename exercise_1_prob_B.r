@@ -128,7 +128,6 @@ test.gamma.B.2.sample = function() {
 
 gamma.B.3.sample = function(n, alpha) {
   # Sample from a Gamma(alpha, beta=1) distribution,
-  # (where alpha is an integer?)
   # Fractional part taken care of by gamma.B.1.sample.
   int_alpha = floor(alpha)
   frac_alpha = alpha - int_alpha
@@ -136,10 +135,50 @@ gamma.B.3.sample = function(n, alpha) {
   # Add up samples from distribution gamma(alpha=1, beta=1) = Exp(1).
   x = unlist(Map(function(x) sum(exp.A.1.sample(int_alpha, lambda=1)), 
                  1:n))
-  x = x + gamma.B.1.sample(n, alpha=frac_alpha)
+  if (0.005 < frac_alpha) { 
+    # Practical lower limit for frac_alpha:
+    # lim (alpha -> 0) Gamma(alpha, beta=1) = 0.
+    x = x + gamma.B.1.sample(n, alpha=frac_alpha)
+  }
   return(x)
 }
-alpha_t = 8.5
-gamma_xs = gamma.B.3.sample(10000, alpha_t)
-mean(gamma_xs)
-hist(gamma_xs, breaks=100, probability=T)
+
+# alpha_t = 8.5
+# gamma_xs = gamma.B.3.sample(10000, alpha_t)
+# mean(gamma_xs)
+# hist(gamma_xs, breaks=100, probability=T)
+
+
+################ Problem B 4: ################
+
+gamma.B.4.sample = function(n, alpha, beta) {
+  xs_1 = gamma.B.3.sample(n, alpha)
+  return(xs_1/beta)
+}
+
+# N = 10000
+# gamma.4.result = gamma.B.4.sample(N, alpha=5.02, beta=0.5)
+# hist(gamma.4.result, breaks=100, probability = T)
+# mean(gamma.4.result)
+
+
+################ Problem B 5: ################
+
+beta.B.5.sample = function(n, alpha, beta) {
+  # Sample 'n' values from Gamma(alpha, 1)
+  # and Gamma(beta, 1).
+  xs = gamma.B.4.sample(n, alpha=alpha, beta=1)
+  ys = gamma.B.4.sample(n, alpha=beta,  beta=1)
+  return(xs / (xs + ys))
+}
+
+
+test.beta.B.5 = function() {
+  alpha = 0.8; beta = 0.8
+  beta_test.result = beta.B.5.sample(10000, alpha, beta)
+  hist(beta_test.result, breaks=100, probability = T)
+  est_mean = mean(beta_test.result)
+  exact_mean = alpha/(alpha + beta)
+  print(paste("Est.mean - exact.mean:", format(est_mean - exact_mean, 
+                                               scientific = T)))
+}
