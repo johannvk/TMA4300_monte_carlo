@@ -7,6 +7,26 @@ exp.A.1.sample = function(n, lambda) {
   return(xs)
 }
 
+test.Exp.A.1.sample = function(lambda=2.5, breaks=100) {
+  N = 1.0e5L
+  test.Exp.density = function(x) dexp(x, rate=lambda)
+  hist(exp.A.1.sample(N, lambda), breaks=breaks, probability=T, 
+       xlim=c(0.0, 2.5),
+       main=paste("Comparison of Exp-density and sample histogram, lambda =",
+                  lambda), 
+       xlab=paste("x ~ Exp(x | lambda),", "N =", N, "samples."), ylab="f(x)")
+  curve(test.Exp.density, add=T)
+  exp_sample = exp.A.1.sample(N, lambda=0.5)
+  est_mu = mean(exp_sample)
+  est_var = var(exp_sample)
+  delta_mu = 1.96*sqrt(est_var/N)
+  print(paste("A 95% confidence interval for the mean of an X ~ Exp(1/2)",
+              "distribution, with analytical answer E[X] = 2: [", 
+              format(est_mu-delta_mu, digits=4), ",",
+              format(est_mu + delta_mu, digits=4), "]."))
+}
+
+
 ################ Problem A 2: ################
 g.A.density = function(x, alpha) {
   c0 = (1.0/alpha + 1.0/exp(1))^(-1)
@@ -87,8 +107,10 @@ test.f.A.sample = function(N = 100000,
                            alpha=2.0) {
   test.f.density = function(xs) f.A.density(xs, alpha)
   hist(f.A.sample(N, alpha), probability=T,
-       breaks=100,
-       xlim=c(-5, 5), ylim=c(0, test.f.density(0.0)))
+       breaks=100, main=paste("Histogram of", N, 
+                              "samples from f( x | alpha=", alpha,")"),
+       xlab="x", ylab="f (x | alpha )",
+       ylim=c(0, test.f.density(0.0)), xlim=c(-5.0, 5.0))
   curve(test.f.density, add=T)
 }
 # Samle funksjonene vi vil kjøre til slutt i en "main"-fil?
