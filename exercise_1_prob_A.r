@@ -138,12 +138,12 @@ box.muller.stdnorm.sample = function(n){
 # Ganske streng: Lett for å lage matriser A * A^T som
 # i prinsippet burde være pos.def. men som i praksis
 # mister den egenskapen grunnet numeriske feil.
-multivar.norm.sample = function(mu, Sigma) {
+multivar.norm.sample = function(mu, Sigma, A=NULL) {
   # Perform a single sampling from the multivariate
   # normal distribution N(mu, Sigma). 
   # Expect: mu in R^{N}, Sigma in R^{NxN} > 0.
   n = length(mu)
-  A = chol(Sigma)
+  if (is.null(A)) { A = chol(Sigma) }
   std_norm_xs = box.muller.stdnorm.sample(n)
   multivar_xs = A %*% std_norm_xs + mu
   return(multivar_xs)
