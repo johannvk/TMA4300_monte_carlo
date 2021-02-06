@@ -1,4 +1,4 @@
-set.seed(5)
+set.seed(10)
 #########Functions from earlier##########
 box.muller.stdnorm.sample = function(n){
   num_samples = ceiling(n/2)
