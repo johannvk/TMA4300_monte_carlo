@@ -1,6 +1,15 @@
 # Optimization function:
 library(stats)
 
+################ Problem D 1: ################
+#Function for calculating
+posterior.kernel = function(theta) {
+  # Assume theta in (0, 1).
+  ys = c(125, 18 + 20, 34)
+  probs = (2+theta)^ys[1]*(1-theta)^(ys[2])*theta^(ys[3])
+  return(probs)
+}
+
 log.posterior.kernel = function(theta) {
   # Assume theta in (0, 1).
   ys = c(125, 18 + 20, 34)
@@ -32,8 +41,27 @@ rejection.sampling.D1 = function(n) {
   }
   return(thetas)
 }
+
+################ Problem D 2: ################
+
 mc.mean.D= function(n){ #Posterior mean estimated by Monte Carlo integration
   thetas = rejection.sampling.D1(n)
   mc_mean = 1/n*sum(thetas)
   return(mc_mean)
 }
+
+#Theoretical distribution function
+posterior = function(theta){
+  normalizer = integrate (posterior.kernel, 0,1)
+  return(posterior.kernel(theta)/normalizer$value)
+}
+
+#Integrand for use in numerical estimation of the theoretical mean
+integrand = function(theta){return(posterior(theta)*theta)}  
+
+#numerical estimation of the theoretical mean
+analytical.mean = function(){
+  num_mean = integrate(integrand,0,1)
+  return(num_mean)
+}
+
