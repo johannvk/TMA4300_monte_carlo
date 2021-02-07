@@ -13,15 +13,13 @@ box.muller.stdnorm.sample = function(n){
 mc.normal.integral = function(n,h){
   stdnorm_sample = box.muller.stdnorm.sample(n) #draws a std normal sample of size n
   vals = h(stdnorm_sample) #evaluates the function h at the sampled points 
-  #plot(stdnorm_sample,vals)
   est = (1/n)*sum(vals) #Computes the MC estimate to be returned
-  #plot((vals-est)^2)
   var_est = 1/(n-1)*sum((vals-est)^2)#Computes the sample variance
   return(c(est, var_est)) #returns a vector containing the MC estimate and the sample variance
 }
 
 #Indicator function for the set of real numbers x>4
-indicator.g4 = function(x){return(x>4)}
+indicator.g4 = function(x){return(x>4)}#Indicator function for the set of real numbers x>4
 
 ##Estimation of Theta = Prob(X>4)
 theta_vec = mc.normal.integral(100000,indicator.g4)
