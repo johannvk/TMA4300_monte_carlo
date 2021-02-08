@@ -138,13 +138,81 @@ box.muller.stdnorm.sample = function(n){
 # Ganske streng: Lett for å lage matriser A * A^T som
 # i prinsippet burde være pos.def. men som i praksis
 # mister den egenskapen grunnet numeriske feil.
-multivar.norm.sample = function(mu, Sigma, A=NULL) {
+one.multivar.norm.sample = function(mu, Sigma, A=NULL) {
   # Perform a single sampling from the multivariate
   # normal distribution N(mu, Sigma). 
   # Expect: mu in R^{N}, Sigma in R^{NxN} > 0.
   n = length(mu)
-  if (is.null(A)) { A = chol(Sigma) }
+  if (is.null(A)) { A = t(chol(Sigma)) }
   std_norm_xs = box.muller.stdnorm.sample(n)
   multivar_xs = A %*% std_norm_xs + mu
   return(multivar_xs)
+}
+
+multivar.norm.sample = function(n, mu, Sigma){
+  # Sample 'n' times from a multivariate
+  # normal distribution with mean vector
+  # 'mu' and covariance matrix 'Sigma'.
+  
+  A = t(chol(Sigma))
+  dim = length(mu)
+  samples = matrix(rep(0, n*dim), nrow=n, ncol=dim)
+  for(i in 1:n){
+    samples[i, ] = one.multivar.norm.sample(mu, 0, A)
+  }
+  return(samples)
+}
+
+
+test.std.normal.sampling = function() {
+  # Generate n=1.e5L samples from the standard normal
+  # distribution N(0, 1), and compare the probability 
+  # histogram with the probability density.
+  N = 100000
+  test.f.density = function(xs) dnorm(xs)
+
+  norm_sample = box.muller.stdnorm.sample(N)
+  hist(norm_sample, probability=T,
+       breaks=100, main=paste("Histogram of", N, 
+                              "samples from N( mu=0 | sigma=1 )"),
+       xlab="x", ylab="f_N (x | mu=0, sigma=1 )",
+       ylim=c(0, test.f.density(0.0)), xlim=c(-4.0, 4.0))
+  curve(test.f.density, add=T)
+  
+  # Should be 1:
+  est_mean = mean(norm_sample)
+  est_var = var(norm_sample)
+  
+  est_skewness = (1/N)*sum((norm_sample - est_mean)^3)/est_var^(3/2)
+  
+  print(paste("Sample characteristics:", "Mean:", 
+              format(est_mean, scientific=T), "Var:", 
+              format(est_var, scientific=T),
+              "Skewness:", format(est_skewness, scientific=T)))
+  delta_mean = 1.96*sqrt(est_var/N)
+  mean.conf.int = c(est_mean - delta_mean, est_mean + delta_mean)
+  print(paste("Mean 95% conf.int.: (", mean.conf.int[1], ",", 
+              mean.conf.int[2], ")."))
+}
+
+
+test.multivariate.normal.samling = function(){
+  N = 1.0e5L
+  mu = c(0, 2, -2)
+  Sigma = matrix(c(7, -3, 2, -3, 6, 1, 2, 1, 4), nrow=3, ncol=3, byrow=T)
+  
+  samples = multivar.norm.sample(N, mu, Sigma)  
+  
+  est_mean = unlist(Map(function(i) mean(samples[, i]), c(1, 2, 3)))
+  est_Sigma = cov(samples, samples)
+  print("Estimated mean:")
+  print(est_mean)
+  print("Estimated Sigma:")
+  print(est_Sigma)
+  
+  diff_Sigma_Inf_norm = norm(Sigma - est_Sigma, "I")
+  print(paste("Infinity norm of (Sigma - Sigma_hat):", 
+              format(diff_Sigma_Inf_norm, scientific=T)))
+  rel_Sigma_error = norm(Sigma - est_Sigma, "2")/norm(Sigma, "2")
+  print(paste("Relative covariance matrix error:", rel_Sigma_error))
 }
