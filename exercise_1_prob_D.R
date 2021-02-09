@@ -27,7 +27,7 @@ rejection.sampling.D1 = function(n) {
 
    # log(c):
   env_const_log = opt.result$objective
-  print(env_const_log)
+  #print(env_const_log)
   
   thetas = vector(length = n)
   for (i in (1:n)){
@@ -65,3 +65,46 @@ analytical.mean = function(){
   return(num_mean)
 }
 
+################ Problem D 3: ################
+
+rejection.sampling.counter = function(n) {
+  
+  # Find the log of the enveloping constant c, being the 
+  # maximum value of the log posterior 
+  # ys = c(y1, y2, y3, y4) = c(125, 18, 20, 34).
+  opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), 
+                               maximum=T) 
+  # log(c):
+  env_const_log = opt.result$objective
+  #print(env_const_log)
+  
+  thetas = vector(length = n)
+  attempts_needed = vector(length = n)
+  for (i in (1:n)){
+    #print(i)
+    attempt=0
+    us = c(1,0)
+    while(log(us[1])>log.posterior.kernel(us[2])-env_const_log){
+      us = runif(2)
+      attempt=attempt+1
+    }
+    attempts_needed[i]=attempt
+    thetas[i]=us[2]
+  }
+  print(sum(attempts_needed)/n)
+  return(thetas)
+}
+
+theoretical.acceptance = function(){
+  
+  #Calculates the log of the enveloping constant
+  opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), maximum=T) 
+  
+  # log(c):
+  env_const_log = opt.result$objective
+  
+  integral = integrate(posterior.kernel,0,1)$value
+  print(integral)
+  accept_prob = integral/exp(env_const_log)
+  return(accept_prob)
+}
