@@ -40,12 +40,17 @@ square = function(x){
 
 ################ Problem C 2: ################
 importance.sampling.expnor = function(n,h){
-  xs = sqrt(16-2*log(runif(n))) #Samples the proposal distribution
+  #Sampling the proposal distribution
+  xs = sqrt(16-2*log(runif(n))) 
+  
+  #Computing the weights using the ratio of the probability densities:
   gs = exp(8)*xs*exp(-1/2*xs^2) 
   fs = (2*pi)^(-1/2)*exp(-1/2*xs^2)
-  ws = fs/gs #computes the weights using the ratio of the probability densities
+  ws = fs/gs 
+  
+  #Computing the estimate:
   vals = h(xs)
-  est = (1/n)*sum(vals*ws) #computes the estimate
+  est = (1/n)*sum(vals*ws) 
   
   #Computing a variance estimate, divided by n to account for CLT:
   var_est = 1/(n-1)*sum((vals*ws-est)^2)/n 
@@ -62,6 +67,7 @@ width2 = theta2_interval[2]-theta2_interval[1]
 ################ Problem C 3: ################
 
 antithetical.importance = function(n,h){
+  #Generating a uniform sample of size n
   us = runif(n)
   
   #Sampling antithetically from the distribution g:
@@ -89,7 +95,7 @@ antithetical.importance = function(n,h){
   
   #Calculating the mean and variance of the total averaged estimator
   tot_est = 1/2*(est1+est2)
-  tot_var = 1/4*var_est1+1/4*var_est2+1/2*cov_est
+  tot_var = (1/4*var_est1+1/4*var_est2+1/2*cov_est)/n
   
   return(c(tot_est,tot_var))
 }
