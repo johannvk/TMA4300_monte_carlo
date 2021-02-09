@@ -27,11 +27,11 @@ rejection.sampling.D1 = function(n) {
 
    # log(c):
   env_const_log = opt.result$objective
-  #print(env_const_log)
+  # print(env_const_log)
   
   thetas = vector(length = n)
   for (i in (1:n)){
-    print(i)
+    # print(i)
     us = c(1,0)
     while(log(us[1])>log.posterior.kernel(us[2])-env_const_log){
       us = runif(2)
@@ -56,11 +56,12 @@ posterior = function(theta){
   return(posterior.kernel(theta)/normalizer$value)
 }
 
-#Integrand for use in numerical estimation of the theoretical mean
-integrand = function(theta){return(posterior(theta)*theta)}  
-
-#numerical estimation of the theoretical mean
 analytical.mean = function(){
+  #numerical estimation of the theoretical mean
+  
+  #Integrand for use in numerical estimation of the theoretical mean
+  integrand = function(theta){return(posterior(theta)*theta)}  
+  
   num_mean = integrate(integrand,0,1)
   return(num_mean)
 }
@@ -81,7 +82,7 @@ rejection.sampling.counter = function(n) {
   thetas = vector(length = n)
   attempts_needed = vector(length = n)
   for (i in (1:n)){
-    #print(i)
+    # print(i)
     attempt=0
     us = c(1,0)
     while(log(us[1])>log.posterior.kernel(us[2])-env_const_log){
@@ -91,7 +92,8 @@ rejection.sampling.counter = function(n) {
     attempts_needed[i]=attempt
     thetas[i]=us[2]
   }
-  print(sum(attempts_needed)/n)
+  print(paste("Average number of trials needed for acceptance:", 
+              sum(attempts_needed)/n))
   return(thetas)
 }
 
@@ -104,7 +106,9 @@ theoretical.acceptance = function(){
   env_const_log = opt.result$objective
   
   integral = integrate(posterior.kernel,0,1)$value
-  print(integral)
+  # print(integral)
   accept_prob = integral/exp(env_const_log)
+  print(paste("Expected number of draws per accepted sample:", 
+              format(1.0/accept_prob, digits=4)))
   return(accept_prob)
 }

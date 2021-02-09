@@ -40,6 +40,19 @@ gamma.B.1.sample = function(n, alpha) {
   return(draws)
 }
 
+test.gamma.B.1.sample = function(alpha_t = 0.72, N = 1.0e4L, breaks=100) {
+  draws = gamma.B.1.sample(N, alpha=alpha_t)
+  
+  print(paste("mean:", mean(draws), "var:", var(draws)))
+  
+  hist(draws, breaks=breaks, probability = T, xlab="x",
+       main=paste("Histogram of", N, "samples from Gamma(", 
+                  alpha_t, ", 1 ) with density overlay."),
+       xlim=c(0.0, 2.5))
+  
+  test_gamma = function(x) dgamma(x, shape=alpha_t, scale=1.0)
+  curve(test_gamma, from=0.001, to=3, add=T)
+}
 
 ################ Problem B 2: ################
 
@@ -47,7 +60,6 @@ gamma.B.2.sample = function(n, alpha) {
   # Generate 'n' samples from a gamma(x | alpha, beta=1) 
   # distribution, with 1 < alpha, using the 'ratio of 
   # uniforms' method.
-  # Think these are correct: Had forgotten the ^(1/2)...
   log_a = 0.5*(alpha-1)*(log(alpha-1) - 1)
   log_b_plus = 0.5*(alpha+1)*(log(alpha+1) - 1)
   
@@ -66,7 +78,7 @@ gamma.B.2.sample = function(n, alpha) {
   draws = double(n); tot_draws = 0; num_attempts = 0
   while (tot_draws < n) {
     # Draw the remaining number of samples needed each time:
-    N = n - tot_draws; num_attempts = num_attempts + N
+    N = 1*(n - tot_draws); num_attempts = num_attempts + N
     log_x1s = log_a + log(runif(N))
     log_x2s = log_b_plus + log(runif(N))
     
@@ -106,14 +118,12 @@ display.attempts.per.sample = function(N = 1000) {
 }
 
 
-test.gamma.B.2.sample = function() {
-  alpha_t = 2000.0
-  N = 5000
+test.gamma.B.2.sample = function(alpha_t = 1356.0, N = 1.0e5L, breaks=100) {
   result = gamma.B.2.sample(N, alpha=alpha_t)
   print(paste("It took", result$num.attempts, "attempts to draw", 
               length(result$samples), "samples."))
 
-  hist(result$samples, breaks=100, probability = T, xlab="x",
+  hist(result$samples, breaks=breaks, probability = T, xlab="x",
        main=paste("Histogram of", N, "samples from Gamma(", 
                   alpha_t, ", 1 ) with density overlay."))
   test_gamma = function(x) dgamma(x, shape=alpha_t, scale=1.0)
