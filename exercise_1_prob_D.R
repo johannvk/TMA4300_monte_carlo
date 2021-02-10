@@ -1,5 +1,6 @@
 # Optimization function:
 library(stats)
+library(ggplot2)
 
 ################ Problem D 1: ################
 #Function for calculating
@@ -19,24 +20,27 @@ log.posterior.kernel = function(theta) {
 
 rejection.sampling.D1 = function(n) {
   
-  # Find the log of the enveloping constant c, being the 
-  # maximum value of the log posterior 
-  # ys = c(y1, y2, y3, y4) = c(125, 18, 20, 34).
+  # Finding the log of the enveloping constant c, being the 
+  # maximum value of the log posterior kernel: 
   opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), 
                                    maximum=T) 
 
    # log(c):
-  env_const_log = opt.result$objective
-  # print(env_const_log)
+  envelope_const_log = opt.result$objective
   
+  #Prepares a vector to store the realizations
   thetas = vector(length = n)
+  
   for (i in (1:n)){
-    # print(i)
-    us = c(1,0)
-    while(log(us[1])>log.posterior.kernel(us[2])-env_const_log){
+    
+    us = c(1,0) #Initialization of the while loop
+    
+    #The while loop tests the rejection condition
+    while(log(us[1])>log.posterior.kernel(us[2])-envelope_const_log){
+      #Generating the testing value u and the proposal value theta respectively:
       us = runif(2)
-      #print(us)
     }
+    #Adding accepted theta to the storage vector:
     thetas[i]=us[2]
   }
   return(thetas)
@@ -44,8 +48,12 @@ rejection.sampling.D1 = function(n) {
 
 ################ Problem D 2: ################
 
-mc.mean.D= function(n){ #Posterior mean estimated by Monte Carlo integration
+#Posterior mean estimated by Monte Carlo integration
+mc.mean.D= function(n){ 
+  #Simulates n realisations of the posterior using the rejection algorithm    
   thetas = rejection.sampling.D1(n)
+  
+  #Computing the MC mean
   mc_mean = 1/n*sum(thetas)
   return(mc_mean)
 }
@@ -66,27 +74,35 @@ analytical.mean = function(){
   return(num_mean)
 }
 
+
+
+
 ################ Problem D 3: ################
 
 rejection.sampling.counter = function(n) {
   
-  # Find the log of the enveloping constant c, being the 
+  # Finding the log of the enveloping constant c, being the 
   # maximum value of the log posterior 
-  # ys = c(y1, y2, y3, y4) = c(125, 18, 20, 34).
-  opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), 
-                               maximum=T) 
+  opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), maximum=T) 
+  
   # log(c):
   env_const_log = opt.result$objective
-  #print(env_const_log)
-  
+
+  #Preparing vectors for storage the realizations, and attempts needed for generation
   thetas = vector(length = n)
   attempts_needed = vector(length = n)
+  
   for (i in (1:n)){
-    # print(i)
-    attempt=0
-    us = c(1,0)
+    
+    attempt=0 #Variable for counting attempts
+    
+    us = c(1,0)#Initialization of the while loop
+    
+    #The while loop tests the rejection condition
     while(log(us[1])>log.posterior.kernel(us[2])-env_const_log){
+      #Generating the testing value u and the proposal value theta respectively:
       us = runif(2)
+      
       attempt=attempt+1
     }
     attempts_needed[i]=attempt
