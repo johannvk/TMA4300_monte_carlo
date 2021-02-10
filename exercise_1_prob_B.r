@@ -122,6 +122,7 @@ test.gamma.B.2.sample = function(alpha_t = 1356.0, N = 1.0e5L, breaks=100) {
   result = gamma.B.2.sample(N, alpha=alpha_t)
   print(paste("It took", result$num.attempts, "attempts to draw", 
               length(result$samples), "samples."))
+  print(paste("Mean:", mean(result$samples), "Var:", var(result$samples)))
 
   hist(result$samples, breaks=breaks, probability = T, xlab="x",
        main=paste("Histogram of", N, "samples from Gamma(", 
@@ -183,10 +184,16 @@ beta.B.5.sample = function(n, alpha, beta) {
 }
 
 
-test.beta.B.5 = function() {
-  alpha = 0.8; beta = 0.8
-  beta_test.result = beta.B.5.sample(10000, alpha, beta)
-  hist(beta_test.result, breaks=100, probability = T)
+test.beta.B.5 = function(N=1.0e5L) {
+  alpha = 1.2; beta = 0.8
+  beta_test.result = beta.B.5.sample(N, alpha, beta)
+  hist(beta_test.result, breaks=100, probability = T, 
+       main=paste("Probability histogram for Beta(", 
+                  alpha, ",", beta, ") distribution"),
+       xlab="z in (0, 1)")
+  beta_dens = function(x) dbeta(x, alpha, beta)
+  curve(beta_dens, add=T)
+  
   est_mean = mean(beta_test.result)
   exact_mean = alpha/(alpha + beta)
   print(paste("Est.mean - exact.mean:", format(est_mean - exact_mean, 
