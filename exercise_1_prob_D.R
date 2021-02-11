@@ -1,3 +1,4 @@
+set.seed(5)
 # Optimization function:
 library(stats)
 library(ggplot2)
@@ -74,7 +75,15 @@ analytical.mean = function(){
   return(num_mean)
 }
 
-
+verification.plot = function(n){
+  fsample = rejection.sampling.D1(n)
+  hist(fsample, probability=T,
+       breaks=50, main=paste("Histogram of", n, 
+                              "samples from", expression(f(θ|y))),
+       xlab="θ", ylab="f(θ|y)",
+       ylim=c(0, 9), xlim=c(0, 1))
+  curve(posterior, add=T)
+}
 
 
 ################ Problem D 3: ################
@@ -128,3 +137,9 @@ theoretical.acceptance = function(){
               format(1.0/accept_prob, digits=4)))
   return(accept_prob)
 }
+
+
+
+
+
+
