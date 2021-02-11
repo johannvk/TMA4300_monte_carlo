@@ -83,6 +83,8 @@ verification.plot = function(n){
        xlab="θ", ylab="f(θ|y)",
        ylim=c(0, 9), xlim=c(0, 1))
   curve(posterior, add=T)
+  #abline(v=0.6226, add=T)
+  points(t(c(0.6226,-0.25)),pch="|",col="red")
 }
 
 
@@ -124,22 +126,49 @@ rejection.sampling.counter = function(n) {
 
 theoretical.acceptance = function(){
   
-  #Calculates the log of the enveloping constant
+  #Calculating the log of the enveloping constant
   opt.result = stats::optimize(log.posterior.kernel, interval=c(0, 1), maximum=T) 
+  envelope_const_log = opt.result$objective
   
-  # log(c):
-  env_const_log = opt.result$objective
-  
+  #Computes the integral numerically
   integral = integrate(posterior.kernel,0,1)$value
-  # print(integral)
-  accept_prob = integral/exp(env_const_log)
-  print(paste("Expected number of draws per accepted sample:", 
+  
+  #Calculates the acceptance probability
+  accept_prob = integral/exp(envelope_const_log)
+  
+  #Prints the number of attempts until success, the reciprocal of the probability
+  print(paste("Expected number of random pairs per accepted sample:", 
               format(1.0/accept_prob, digits=4)))
   return(accept_prob)
 }
 
+################ Problem D 4: ################
 
+mc.importance.beta = function(n){
+  #Sampling the proposal distribution
+  thetas = rejection.sampling.D1(n)
+  
+  #Declaring and normalizing the new posterior distribution
+  new.posterior.kernel = function(theta){return(posterior.kernel(theta)*(1-theta)^4)}
+  normalising.constant = integrate(new.posterior.kernel,0,1)$value
+  new.posterior = function(theta){return(new.posterior.kernel(theta)/normalising.constant)}
+  
+  #Computing the weights using the ratio of the probability densities:
+  gs = posterior(thetas) 
+  fs = new.posterior(thetas)
+  ws = fs/gs 
+  
+  #Computing the estimate:
+  est = (1/n)*sum(thetas*ws) 
+  
+  return(est)
+}
 
-
-
+beta5.analytical = function(){
+  new.posterior.kernel = function(theta){return(posterior.kernel(theta)*(1-theta)^4)}
+  normalising.constant = integrate(new.posterior.kernel,0,1)$value
+  integrand = function(theta){return(theta*new.posterior.kernel(theta)/normalising.constant)}
+  b5analyticmean = integrate(integrand,0,1)$value
+  return(b5analyticmean)
+}
 
