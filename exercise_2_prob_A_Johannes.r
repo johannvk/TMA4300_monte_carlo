@@ -1,8 +1,8 @@
 library(boot)
 library(ggplot2)
+library(coda)
 
 # Using our own functions from previous exercises:
-
 # Sampling from Normal distribution:
 source("exercise_1_prob_A.r")
 
@@ -92,17 +92,37 @@ t1.RW.Metropolis.sample = function(t1, sigma2.t, lambda0, lambda1, coal.df) {
   log.f.old  = t1.kernel(t1,       lambda0, lambda1, coal.df=coal.df)
 
   alpha = exp(log.f.prop - log.f.old)
+  accepted = runif(1) < alpha
+  if (accepted) { t1.value = t1.star }
+  else { t1.value = t1 }
   
-  if (runif(1) < alpha){
-    return(t1.star)
-  }
-  else {
-    return(t1)
-  }
+  ret.list = list(t1.value, accepted)
+  names(ret.list) = c("value", "accepted")
+  return(ret.list)
+}
+
+t1.Unif.Metropolis.sample = function(t1, sigma2.t, lambda0, lambda1, coal.df) {
+  t.start = coal.df$date[[1]]
+  t.end = coal.df$date[[length(coal.df$date)]]
+  
+  
+  t1.star = runif(1, t1 - sqrt(sigma2.t), t1 + sqrt(sigma2.t))
+  
+  log.f.prop = t1.kernel(t1.star,  lambda0, lambda1, coal.df=coal.df)
+  log.f.old  = t1.kernel(t1,       lambda0, lambda1, coal.df=coal.df)
+  
+  alpha = exp(log.f.prop - log.f.old)
+  accepted = runif(1) < alpha
+  if (accepted) { t1.value = t1.star }
+  else { t1.value = t1 }
+  
+  ret.list = list(t1.value, accepted)
+  names(ret.list) = c("value", "accepted")
+  return(ret.list)
 }
 
 hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
-                                           sigma2.t, coal.df) {
+                                           sigma2.t, coal.df, t1.prop="norm") {
   # Generate a Markov chain of length 'N' for the four parameters 
   # 't1', 'lambda0', 'lambda1', and 'beta'.
   
@@ -115,8 +135,19 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
   lambda1.vec = double(N)
   beta.vec = double(N)
   
+  num.accepted.t1 = 0 
+
   for (i in 1:N) {
-    t1 = t1.RW.Metropolis.sample(t1, sigma2.t, lambda0, lambda1, coal.df)
+    if (t1.prop == "norm") {
+      t1.list = t1.RW.Metropolis.sample(t1, sigma2.t, lambda0, 
+                                        lambda1, coal.df)
+    } else if (t1.prop == "unif") {
+      t1.list = t1.Unif.Metropolis.sample(t1, sigma2.t, lambda0, 
+                                          lambda1, coal.df)
+    }
+    t1 = t1.list$value
+    num.accepted.t1 = num.accepted.t1 + t1.list$accepted 
+
     lambda0 = lambda0.sample(t1, t.start, beta, coal.df)
     lambda1 = lambda1.sample(t.end, t1, beta, coal.df)
     beta = beta.sample(lambda0, lambda1)
@@ -127,7 +158,10 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
     lambda1.vec[[i]] = lambda1
     beta.vec[[i]]    = beta
   }
-  
+
+  t1.acceptance.rate = num.accepted.t1/N
+  print(paste("t1 acceptance rate:", t1.acceptance.rate))
+
   ret.list = list(t1.vec, lambda0.vec, lambda1.vec, beta.vec)
   names(ret.list) = c("t1", "lambda0", "lambda1", "beta")
   return(ret.list)
@@ -139,7 +173,8 @@ plot.parameter.results = function() {
 }
 
 
-run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0) {
+run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0,
+                                 t1.prop="norm") {
   normalize_time = F
   coal.df = boot::coal
   
@@ -164,13 +199,15 @@ run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0) {
   # Hyper-parameter:
   # sigma2.t = 100.0
   
-  gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, t1, lambda0, lambda1, 
-                                                   beta, sigma2.t, coal.df)
+  gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, 
+                                                   t1, lambda0, lambda1, beta, 
+                                                   sigma2.t, coal.df, t1.prop)
   
   plot(seq_along(t1.res), t1.res, type="l", main="Trace plot for 't1'")
   t1.res = gibbs.mcmc.res$t1
   hist(t1.res, breaks=100, probability = T)
   acf(t1.res)
+  print(paste("Effective sample size of t1:", coda::effectiveSize(t1.res)))
   
   # beta.res = gibbs.mcmc.res$beta
   # plot(seq_along(beta.res), beta.res, type="l")
@@ -196,7 +233,10 @@ main_A = function() {
   
   plot.coal.disasters(coal.df)
   
-  gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=1.0e5L, sigma2.t = 20.0)
+  # Best acceptance rate for 'unif': sigma2.t = 100
+  # Best acceptance rate for 'norm': sigma2.t = 25
+  gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=1.0e4L, sigma2.t = 25.0, 
+                                           t1.prop="norm")
 }
 
 MCMC.res = main_A()
