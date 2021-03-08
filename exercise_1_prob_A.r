@@ -130,6 +130,11 @@ box.muller.stdnorm.sample = function(n){
   return(xs[1:n])
 }
 
+normal.sample = function(n, mu=0.0, sigma2=1.0) {
+  std.norm.values = box.muller.stdnorm.sample(n)
+  normal.values = sqrt(sigma2)*std.norm.values + mu
+  return(normal.values)
+}
 
 ################ Problem A 5: ################
 # Transform a standard-normal vector of samples
