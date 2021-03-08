@@ -139,6 +139,44 @@ plot.parameter.results = function() {
 }
 
 
+run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0) {
+  normalize_time = F
+  coal.df = boot::coal
+  
+  if (normalize.time){
+    # Makes numerics nicer, but will affect 
+    # the Poisson process rates.
+    translate = min(coal.df)
+    scale = max(coal.df) - min(coal.df)
+    coal.df = (coal.df - translate)/scale
+  }
+  
+  t.start = coal.df$date[[1]]
+  t.end = coal.df$date[[length(coal.df$date)]]   
+  
+  ######### Run MCMC chain with Hybrid Gibbs sampler #########
+  # Initial values:
+  t1 = (t.end + t.start)/2.0
+  lambda0 = 2.0
+  lambda1 = 2.0
+  beta = 1.0
+  
+  # Hyper-parameter:
+  # sigma2.t = 100.0
+  
+  gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, t1, lambda0, lambda1, 
+                                                   beta, sigma2.t, coal.df)
+  
+  plot(seq_along(t1.res), t1.res, type="l", main="Trace plot for 't1'")
+  t1.res = gibbs.mcmc.res$t1
+  hist(t1.res, breaks=100, probability = T)
+  acf(t1.res)
+  
+  # beta.res = gibbs.mcmc.res$beta
+  # plot(seq_along(beta.res), beta.res, type="l")
+  return(gibbs.mcmc.res)
+}
+
 main_A = function() {
   
   normalize_time = F
@@ -152,33 +190,13 @@ main_A = function() {
     coal.df = (coal.df - translate)/scale
   }
 
-  t.start = coal.df$date[[1]]
-  t.end = coal.df$date[[length(coal.df$date)]]   
-  
-  num.accidents = cumulative.coal.disasters(1851.6325, coal.df)
-  print(num.accidents)
+  test.t = 1901.6325
+  num.accidents = cumulative.coal.disasters(test.t, coal.df)
+  print(paste("Num of accidents before time", test.t, ":", num.accidents))
   
   plot.coal.disasters(coal.df)
   
-  ######### Run MCMC chain with Hybrid Gibbs sampler #########
-  # Initial values:
-  t1 = (t.end + t.start)/2.0
-  lambda0 = 2.0
-  lambda1 = 2.0
-  beta = 1.0
-  
-  # Hyper-parameter:
-  sigma2.t = 25.0
-
-  N = 1.0e4L
-  gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, t1, lambda0, lambda1, 
-                                                   beta, sigma2.t, coal.df)
-  # t1.res = gibbs.mcmc.res$t1
-  # plot(seq_along(t1.res), t1.res, type="l")
-  
-  beta.res = gibbs.mcmc.res$beta
-  plot(seq_along(beta.res), beta.res, type="l")
-  return(gibbs.mcmc.res)
+  gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=1.0e5L, sigma2.t = 20.0)
 }
 
 MCMC.res = main_A()
