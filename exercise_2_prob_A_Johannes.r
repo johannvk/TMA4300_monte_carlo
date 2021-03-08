@@ -87,8 +87,10 @@ t1.kernel = function(t1, lambda0, lambda1, coal.df, log.scale=T) {
 
 t1.RW.Metropolis.sample = function(t1, sigma2.t, lambda0, lambda1, coal.df) {
   t1.star = normal.sample(1, t1, sigma2.t)
-  log.f.prop = t1.kernel(t1.star, lambda0, lambda1, coal.df)
-  log.f.old = t1.kernel(t1, lambda0, lambda1, coal.df)
+
+  log.f.prop = t1.kernel(t1.star,  lambda0, lambda1, coal.df=coal.df)
+  log.f.old  = t1.kernel(t1,       lambda0, lambda1, coal.df=coal.df)
+
   alpha = exp(log.f.prop - log.f.old)
   
   if (runif(1) < alpha){
@@ -132,11 +134,13 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
 }
 
 
+plot.parameter.results = function() {
+  # NOT IMPLEMENTED!
+}
+
+
 main_A = function() {
   
-  t1.test = t1.RW.sample(1900, 4.0)
-  print(t1.test)
-
   normalize_time = F
   coal.df = boot::coal
   
@@ -164,13 +168,17 @@ main_A = function() {
   beta = 1.0
   
   # Hyper-parameter:
-  sigma2.t = 9.0
+  sigma2.t = 25.0
 
-  N = 1.0e5L
+  N = 1.0e4L
   gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, t1, lambda0, lambda1, 
                                                    beta, sigma2.t, coal.df)
-  t1.res = gibbs.mcmc.res$t1
-  plot(seq_along(t1.res), t1.res, type="l")  
+  # t1.res = gibbs.mcmc.res$t1
+  # plot(seq_along(t1.res), t1.res, type="l")
+  
+  beta.res = gibbs.mcmc.res$beta
+  plot(seq_along(beta.res), beta.res, type="l")
+  return(gibbs.mcmc.res)
 }
 
-main_A()
+MCMC.res = main_A()
