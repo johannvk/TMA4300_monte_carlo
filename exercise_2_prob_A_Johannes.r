@@ -11,11 +11,8 @@ source("exercise_1_prob_A.r")
 source("exercise_1_prob_B.r")
 
 
-
 cumulative.coal.disasters = function(t, coal.df){
   # Find the cumulative number of disasters before time t.
-  # User decides whether or not to normalize the time of 
-  # disasters to the interval [0, 1]
 
   # First and last time in the dataset are not disasters,
   # but the 'start'- and 'end'-time for the dataset.
@@ -24,7 +21,7 @@ cumulative.coal.disasters = function(t, coal.df){
   if (t < coal.df$date[[2]]) {
     return(0)
   } 
-  index_of_first_time_after_t = Position(function(x) x >= t, coal.df$date, 
+  index_of_first_time_after_t = Position(function(x) x > t, coal.df$date, 
                                          nomatch=NA)
   # Did not find a time in the dataset greater than 't':
   if (is.na(index_of_first_time_after_t)){
@@ -168,7 +165,6 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
   return(ret.list)
 }
 
-
 plot.parameter.results = function(mcmc.result) {
   
   
@@ -185,7 +181,7 @@ plot.parameter.results = function(mcmc.result) {
   hist(t1.res, breaks=100, probability = T, main="Histogram Density", 
        ylab="Density", xlab="Years", 
        xlim=c(1885, 1900), ylim=c(0.0, 0.45),
-       col="blue", border="green")
+       col="blue")
   forecast::Acf(t1.res, lag.max = 10, main="ACF for t1")
   
   # Lambda0 results:
@@ -194,7 +190,7 @@ plot.parameter.results = function(mcmc.result) {
        main="lambda0: Trace plot", ylab="MCMC Samples of lambda0", xlab="Step")
   hist(lambda0.res, breaks=100, probability = T, main="Histogram Density", 
        ylab="Density", xlab="Number of accidents per year between [t0, t1]", 
-       col="blue") #, border="green")
+       col="blue")
   forecast::Acf(lambda0.res, lag.max = 10, main="ACF for lambda0")
   
   # Lambda1 results:
@@ -203,14 +199,14 @@ plot.parameter.results = function(mcmc.result) {
        main="lambda1: Trace plot", ylab="MCMC Samples of lambda1", xlab="Step")
   hist(lambda1.res, breaks=100, probability = T, main="Histogram Density", 
        ylab="Density", xlab="Number of accidents per year between [t1, t2]", 
-       col="blue") #, border="green")
+       col="blue")
   forecast::Acf(lambda1.res, lag.max = 10, main="ACF for lambda0")
     
   # Beta results:
   print("Result Mosaic for the hyper-parameter, beta:")
   plot(seq_along(beta.res), beta.res, type="l", col="red",
        main="beta: Trace plot", ylab="MCMC Samples of lambda1", xlab="Step")
-  hist(beta.res, breaks=100, probability = T, main="Histogram Density", 
+  hist(beta.res, breaks=200, probability = T, main="Histogram Density", 
        ylab="Density", xlab="scale parameter of Poisson process' intensity", 
        xlim=c(0, 10),
        col="blue")
@@ -282,6 +278,13 @@ main_A = function() {
                                            t1.prop="norm")
   plot.parameter.results(gibbs.hybrid.res)
   return(gibbs.hybrid.res)
+}
+
+samples.hpd = function(samples, prob=0.95) {
+  attr(samples, "class") = "mcmc"
+  samples.hpd = coda::HPDinterval(samples, prob=prob)
+  dimnames(samples.hpd)[[1]][1] = c("HPD")
+  return(samples.hpd)
 }
 
 MCMC.res = main_A()
