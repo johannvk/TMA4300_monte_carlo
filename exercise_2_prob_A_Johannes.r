@@ -1,6 +1,7 @@
 library(boot)
 library(ggplot2)
 library(coda)
+library(forecast)
 
 # Using our own functions from previous exercises:
 # Sampling from Normal distribution:
@@ -168,8 +169,59 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
 }
 
 
-plot.parameter.results = function() {
-  # NOT IMPLEMENTED!
+plot.parameter.results = function(mcmc.result) {
+  
+  
+  init = par(no.readonly=TRUE)
+  par(mfrow = c(1, 3))
+  
+  t1.res = mcmc.result$t1; beta.res = mcmc.result$beta
+  lambda0.res = mcmc.result$lambda0; lambda1.res = mcmc.result$lambda1
+    
+  # Time results:
+  print("Result Mosaic for the 'splitting time' t1.")
+  plot(seq_along(t1.res), t1.res, type="l", col="red",
+       main="t1: Trace plot", ylab="MCMC Samples of t1", xlab="Step")
+  hist(t1.res, breaks=100, probability = T, main="Histogram Density", 
+       ylab="Density", xlab="Years", 
+       xlim=c(1885, 1900), ylim=c(0.0, 0.45),
+       col="blue", border="green")
+  forecast::Acf(t1.res, lag.max = 10, main="ACF for t1")
+  
+  # Lambda0 results:
+  print("Result Mosaic for the first poisson process intensity, lambda0:")
+  plot(seq_along(lambda0.res), lambda0.res, type="l", col="red",
+       main="lambda0: Trace plot", ylab="MCMC Samples of lambda0", xlab="Step")
+  hist(lambda0.res, breaks=100, probability = T, main="Histogram Density", 
+       ylab="Density", xlab="Number of accidents per year between [t0, t1]", 
+       col="blue") #, border="green")
+  forecast::Acf(lambda0.res, lag.max = 10, main="ACF for lambda0")
+  
+  # Lambda1 results:
+  print("Result Mosaic for the second poisson process intensity, lambda1:")
+  plot(seq_along(lambda1.res), lambda1.res, type="l", col="red",
+       main="lambda1: Trace plot", ylab="MCMC Samples of lambda1", xlab="Step")
+  hist(lambda1.res, breaks=100, probability = T, main="Histogram Density", 
+       ylab="Density", xlab="Number of accidents per year between [t1, t2]", 
+       col="blue") #, border="green")
+  forecast::Acf(lambda1.res, lag.max = 10, main="ACF for lambda0")
+    
+  # Beta results:
+  print("Result Mosaic for the hyper-parameter, beta:")
+  plot(seq_along(beta.res), beta.res, type="l", col="red",
+       main="beta: Trace plot", ylab="MCMC Samples of lambda1", xlab="Step")
+  hist(beta.res, breaks=100, probability = T, main="Histogram Density", 
+       ylab="Density", xlab="scale parameter of Poisson process' intensity", 
+       xlim=c(0, 10),
+       col="blue")
+  forecast::Acf(beta.res, lag.max = 10, main="ACF for beta")
+
+  # Possible args to change font sizes:
+  # cex.lab = 2,
+  # cex.axis = 2,
+  # cex.main = 2,
+  
+  par(init)
 }
 
 
@@ -202,15 +254,6 @@ run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0,
   gibbs.mcmc.res = hybrid.Gibbs.MCMC.coal.sampling(N, 
                                                    t1, lambda0, lambda1, beta, 
                                                    sigma2.t, coal.df, t1.prop)
-  
-  plot(seq_along(t1.res), t1.res, type="l", main="Trace plot for 't1'")
-  t1.res = gibbs.mcmc.res$t1
-  hist(t1.res, breaks=100, probability = T)
-  acf(t1.res)
-  print(paste("Effective sample size of t1:", coda::effectiveSize(t1.res)))
-  
-  # beta.res = gibbs.mcmc.res$beta
-  # plot(seq_along(beta.res), beta.res, type="l")
   return(gibbs.mcmc.res)
 }
 
@@ -237,6 +280,8 @@ main_A = function() {
   # Best acceptance rate for 'norm': sigma2.t = 25
   gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=1.0e4L, sigma2.t = 25.0, 
                                            t1.prop="norm")
+  plot.parameter.results(gibbs.hybrid.res)
+  return(gibbs.hybrid.res)
 }
 
 MCMC.res = main_A()
