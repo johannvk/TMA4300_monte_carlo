@@ -40,8 +40,14 @@ plot.coal.disasters = function(coal.df) {
        xlab="Time (Years)", 
        ylab="Cumulative Coal Disasters (10 or more deaths)", 
        main="Overview of Coal Mining Disasters in the UK (Jarrett, 1979)",
-       ylim=c(0L, length(coal.df$date)*1.1)
+       ylim=c(0L, length(coal.df$date)*1.05), 
+       # xaxs="i", yaxs="i",
+       # panel.first=  grid(nx=16, ny=20, lty=1)
        )
+  x_ticks <- axis(1, labels = FALSE)
+  y_ticks <- axis(2, labels = FALSE)
+  abline(v = x_ticks, h = y_ticks, lwd = 2.5, 
+         lty = 3, col = "lightgray")
 }
 
 beta.sample = function(lambda0, lambda1){
@@ -287,4 +293,29 @@ samples.hpd = function(samples, prob=0.95) {
   return(samples.hpd)
 }
 
-MCMC.res = main_A()
+mcmc.diagnostics = function(MCMC.res) {
+  t1.mcmc = coda::mcmc(MCMC.res$t1)
+  densplot(t1.mcmc, main="Estimated posterior density for t1", 
+           ylab="Density", xlab="Years (+ observations)",
+           xlim=c(1884.5, 1900))
+
+  lam0.mcmc = coda::mcmc(MCMC.res$lambda0)
+  densplot(lam0.mcmc, main="Estimated posterior density for lambda0", 
+           ylab="Density", xlab="Disasters/year (+ observations)")
+           # xlim=c(1884.5, 1900))
+  
+  lam1.mcmc = coda::mcmc(MCMC.res$lambda1)
+  densplot(lam1.mcmc, main="Estimated posterior density for lambda1", 
+           ylab="Density", xlab="Disasters/year (+ observations)")
+  
+  beta.mcmc = coda::mcmc(MCMC.res$beta)
+  densplot(beta.mcmc, main="Estimated posterior density for beta", 
+           ylab="Density", xlab="Disasters/year (+ observations)",
+           xlim=c(0, 6.2))
+}
+
+# MCMC.res = main_A()
+t1.res = MCMC.res$t1
+mcmc.list.t1.res = coda::as.mcmc.list(t1.res, start=1, end=length(t1.res))
+start(mcmc.t1.res)
+mc1 = coda::geweke.plot(coda::as.mcmc(t1.res))
