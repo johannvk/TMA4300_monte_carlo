@@ -74,16 +74,66 @@ mc.estimate.smooth <- function(N){
   #Computing column wise MC estimates, keeping half of the simulated chain
   est <- colMeans(etas[N/2:N,]) 
   
-  #computing sample variances
+  #computing sample variances, in order to find conf int
   var_est <- apply(etas[N/2:N,],2,var)
   
-  #Computing effective sample sizes
-  #eff_size <- apply(etas[N/2:N,],2,effectiveSize)
-  print(effectiveSize(etas[N/2:N,]))
+  #Computing effective sample sizes, with a function from the coda package
+  eff_size <- coda::effectiveSize(etas[N/2:N,])
   
-  return(est)
+  #Computing the limits of the confidence interval
+  conf_int_lower = est -  1.96*sqrt(var_est)/sqrt(eff_size)
+  conf_int_upper = est +  1.96*sqrt(var_est)/sqrt(eff_size)
+  
+  #Returns posterior mean and confidence interval
+  return(list(est=est, conf_int_lower=conf_int_lower, conf_int_upper = conf_int_upper))
 }
 
 mc.postmean.etas <- mc.estimate.smooth(10000)
+
+eta.plot <- function(N){
+  
+  mc.eta <- data.frame(mc.estimate.smooth(N)) %>% 
+    mutate(t = row_number())
+  #print(mc.eta)
+  yt <- read.table("Gaussiandata.txt") %>% 
+    setNames("y_t") %>% 
+    mutate(t = row_number())
+  #print(yt)
+  p <- ggplot(yt, aes(x=t,y=y_t)) + 
+    geom_point() +
+    geom_line(data=mc.eta, aes(x=t, y=est)) +
+    geom_ribbon(data=mc.eta, aes(x=t, ymin=conf_int_lower,ymax=conf_int_upper),
+                inherit.aes = FALSE, alpha=0.3) +
+    ggtitle(TeX("Estimated smooth effect E$(\\eta_t|\\textbf{y})$, with 95% confidence interval")) +
+    theme_bw()
+  return(p)
+}
+#, aes(est)
+
+ggplot(yt, aes(x=t,y=y_t)) + 
+  geom_point() +
+  ggtitle("Gaussian data") +
+  ylab(TeX("$y_t$")) +
+  theme_bw()
+
+p3 <- ggplot(data, aes(x=my_x, y=my_y)) +
+  geom_point() +
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
+  theme_ipsum()
+
+# Hyperparameter plots ----------------------------------------------------
+
+hyperparameter.plot =function(N){
+  
+  thetas <- data.frame(gibbs(N)$thetas)
+  thetas
+  p <- ggplot(thetas, aes(gibbs.N..thetas)) + 
+    geom_histogram(binwidth=0.05) +
+    ggtitle(TeX("Estimate for $\\pi(\\theta | \\textbf{y})$")) +
+    xlab(TeX("$\\theta$")) +
+    theme_bw()
+  return(p)
+}
+ 
 
 
