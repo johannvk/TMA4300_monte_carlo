@@ -88,7 +88,7 @@ mc.estimate.smooth <- function(N){
   return(list(est=est, conf_int_lower=conf_int_lower, conf_int_upper = conf_int_upper))
 }
 
-mc.postmean.etas <- mc.estimate.smooth(10000)
+#mc.postmean.etas <- mc.estimate.smooth(10000)
 
 eta.plot <- function(N){
   
@@ -108,27 +108,17 @@ eta.plot <- function(N){
     theme_bw()
   return(p)
 }
-#, aes(est)
 
-ggplot(yt, aes(x=t,y=y_t)) + 
-  geom_point() +
-  ggtitle("Gaussian data") +
-  ylab(TeX("$y_t$")) +
-  theme_bw()
-
-p3 <- ggplot(data, aes(x=my_x, y=my_y)) +
-  geom_point() +
-  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
-  theme_ipsum()
 
 # Hyperparameter plots ----------------------------------------------------
 
 hyperparameter.plot =function(N){
-  
-  thetas <- data.frame(gibbs(N)$thetas)
-  thetas
-  p <- ggplot(thetas, aes(gibbs.N..thetas)) + 
-    geom_histogram(binwidth=0.05) +
+  thetas = gibbs(N)$thetas
+  thetas = thetas[(N/2):N]
+  thetas <- data.frame(thetas, param=thetas)
+  p <- ggplot(data=thetas, aes(param)) + 
+    geom_histogram(binwidth=0.05,aes(y=..density..)) +
+    geom_density() +
     ggtitle(TeX("Estimate for $\\pi(\\theta | \\textbf{y})$")) +
     xlab(TeX("$\\theta$")) +
     theme_bw()
