@@ -11,9 +11,9 @@ source("exercise_1_prob_A.r")
 source("exercise_1_prob_B.r")
 
 
-cumulative.coal.disasters = function(t, coal.df){
+cumulative.coal.disasters = function(t, coal.df=boot::coal){
   # Find the cumulative number of disasters before time t.
-
+  
   # First and last time in the dataset are not disasters,
   # but the 'start'- and 'end'-time for the dataset.
   tot_num_disasters = length(coal.df$date) - 2
@@ -169,9 +169,6 @@ hybrid.Gibbs.MCMC.coal.sampling = function(N, t1, lambda0, lambda1, beta,
   # Generate a Markov chain of length 'N' for the four parameters 
   # 't1', 'lambda0', 'lambda1', and 'beta'.
   
-  t.start = coal.df$date[[1]]
-  t.end = coal.df$date[[length(coal.df$date)]]
-
   # Initialize storage vectors:
   t1.vec = double(N)
   lambda0.vec = double(N)
@@ -238,7 +235,6 @@ first.block.update = function(params, sigma2.t, coal.df) {
   y0.star = cumulative.coal.disasters(t1.star, coal.df)
   y1.star = tot.disasters - y0.star
   
-  # Uncomment: 
   lam0.star.alpha = y0.star + 2; lam0.star.beta = t1.star - t.start + 1.0/beta
   lam1.star.alpha = y1.star + 2; lam1.star.beta = t.end - t1.star + 1.0/beta
   
@@ -478,7 +474,7 @@ run.hybrid.Gibbs.MCMC = function(N=1.0e4L, normalize.time=F, sigma2.t=100.0,
 }
 
 run.block.MCMC = function(sigma2.t = 9.0, sigma2.beta = 4.0,
-                          params = c(1870, 1.0, 3.0, 1.0), N=1.0e4L,
+                          params = c(1870, 3.0, 3.0, 1.0), N=1.0e4L,
                           normalize_time = F) {
   names(params) = c("t1", "lambda0", "lambda1", "beta")
   
@@ -560,10 +556,12 @@ samples.hpd = function(samples, prob=0.95) {
 }
 
 mcmc.diagnostics = function(MCMC.res) {
+  layout_matr = matrix(c(1, 2, 4, 3), nrow=2, ncol=2)
+  layout(layout_matr)
   t1.mcmc = coda::mcmc(MCMC.res$t1)
   densplot(t1.mcmc, main="Estimated posterior density for t1", 
            ylab="Density", xlab="Years (+ observations)",
-           xlim=c(1884.5, 1900))
+           xlim=c(1884.5, 1900), ylim=c(0.0, 0.405))
 
   lam0.mcmc = coda::mcmc(MCMC.res$lambda0)
   densplot(lam0.mcmc, main="Estimated posterior density for lambda0", 
@@ -571,7 +569,8 @@ mcmc.diagnostics = function(MCMC.res) {
 
   lam1.mcmc = coda::mcmc(MCMC.res$lambda1)
   densplot(lam1.mcmc, main="Estimated posterior density for lambda1", 
-           ylab="Density", xlab="Disasters/year (+ observations)")
+           ylab="Density", xlab="Disasters/year (+ observations)",
+           xlim=c(0.4, 1.7))
   
   beta.mcmc = coda::mcmc(MCMC.res$beta)
   densplot(beta.mcmc, main="Estimated posterior density for beta", 
@@ -579,10 +578,16 @@ mcmc.diagnostics = function(MCMC.res) {
            xlim=c(0, 6.2))
 }
 
-running.mean = function(data, main) {
+running.mean = function(data, main, ylim=NULL) {
   run.mean = cumsum(data)/1:length(data)
-  plot(1:length(data), run.mean, ylab="Running Mean", 
-       xlab="Iterations", type="l", main=main)
+  if (is.null(ylim)) {
+    plot(1:length(data), run.mean, ylab="Running Mean", 
+         xlab="Iterations", type="l", col="blue", main=main)
+  } else {
+    plot(1:length(data), run.mean, ylab="Running Mean", 
+         xlab="Iterations", type="l", col="blue", ylim=ylim,
+         main=main)
+  }
 }
 
 trace.plot = function(data, main) {
@@ -597,15 +602,15 @@ facet.trace = function(MCMC.res, gibbs=T) {
     prefix = "Gibbs:"
     sigma2.t = MCMC.res$sigma2.t
     trace.plot(MCMC.res$t1, main=paste(prefix, "t1,", "sigma2.t =", sigma2.t))
-    trace.plot(MCMC.res$lambda0, main=paste(prefix, "lam0"))
-    trace.plot(MCMC.res$lambda1, main=paste(prefix, "lam1"))
+    trace.plot(MCMC.res$lambda0, main=paste(prefix, "lambda0"))
+    trace.plot(MCMC.res$lambda1, main=paste(prefix, "lambda1"))
     trace.plot(MCMC.res$beta, main=paste(prefix, "beta"))
   } else {
     prefix = "Block:"
     sigma2.t = MCMC.res$sigma2.t; sigma2.beta = MCMC.res$sigma2.beta
     trace.plot(MCMC.res$t1, main=paste(prefix, "t1,", "sigma2.t =", sigma2.t))
-    trace.plot(MCMC.res$lambda0, main=paste(prefix, "lam0"))
-    trace.plot(MCMC.res$lambda1, main=paste(prefix, "lam1"))
+    trace.plot(MCMC.res$lambda0, main=paste(prefix, "lambda0"))
+    trace.plot(MCMC.res$lambda1, main=paste(prefix, "lambda1"))
     trace.plot(MCMC.res$beta, main=paste(prefix, "beta,", 
                                            "sigma2.beta =", sigma2.beta))
   }
@@ -621,21 +626,170 @@ facet.running.means = function(MCMC.res, gibbs=T) {
     prefix = "Gibbs:"
     sigma2.t = MCMC.res$sigma2.t
     running.mean(MCMC.res$t1, main=paste(prefix, "t1,", "sigma2.t =", sigma2.t))
-    running.mean(MCMC.res$lambda0, main=paste(prefix, "lam0"))
-    running.mean(MCMC.res$lambda1, main=paste(prefix, "lam1"))
+    running.mean(MCMC.res$lambda0, main=paste(prefix, "lambda0"))
+    running.mean(MCMC.res$lambda1, main=paste(prefix, "lambda1"))
     running.mean(MCMC.res$beta, main=paste(prefix, "beta"))
   } else {
     prefix = "Block:"
     sigma2.t = MCMC.res$sigma2.t; sigma2.beta = MCMC.res$sigma2.beta
     running.mean(MCMC.res$t1, main=paste(prefix, "t1,", "sigma2.t =", sigma2.t))
-    running.mean(MCMC.res$lambda0, main=paste(prefix, "lam0"))
-    running.mean(MCMC.res$lambda1, main=paste(prefix, "lam1"))
+    running.mean(MCMC.res$lambda0, main=paste(prefix, "lambda0"))
+    running.mean(MCMC.res$lambda1, main=paste(prefix, "lambda1"))
     running.mean(MCMC.res$beta, main=paste(prefix, "beta,", 
                                            "sigma2.beta =", sigma2.beta))
   }
 }
 
+facet.compare.burn.in = function(first_samples=500, gibbs=T, 
+                                 sigma2.t=25.0, sigma2.beta=3.0) {
+  if (gibbs) {
+    N_gibbs = 1.0e4L
+  
+    sigma.1 = 5.0
+    gibbs.1 = run.hybrid.Gibbs.MCMC(N=N_gibbs, sigma2.t = sigma.1,
+                                    t1.prop="norm")
+    # facet.running.means(gibbs.1)
+    # facet.trace(gibbs.1)
+    
+    sigma.2 = 25.0
+    gibbs.2 = run.hybrid.Gibbs.MCMC(N=N_gibbs, sigma2.t = sigma.2,
+                                    t1.prop="norm")
+    # facet.running.means(gibbs.2)
+    # facet.trace(gibbs.2)
+    
+    sigma.3 = 125.0
+    gibbs.3 = run.hybrid.Gibbs.MCMC(N=N_gibbs, sigma2.t = sigma.3,
+                                    t1.prop="norm")
+    # facet.running.means(gibbs.3)
+    # facet.trace(gibbs.3)
+    
+    # Only plot t1-stuff: # Add Density plots at a bottom row?
+    layout_matr = matrix(c(1, 2, 3, 4, 5, 6), nrow=2, ncol=3, byrow=F)
+    layout(layout_matr)
+    prefix = "Gibbs:"
+  
+    gibbs.1.t1 = coda::mcmc(gibbs.1$t1)
+    trace.plot(gibbs.1$t1[1:first_samples], main=paste(prefix, "t1,", "sigma2.t =", sigma.1))
+    running.mean(gibbs.1$t1[1:first_samples], 
+                 main=paste("Acceptance rate:", 
+                            format(gibbs.1$t1.accept.rate, digits=3),
+                            "\nN_eff/N_act:", 
+                            format(coda::effectiveSize(gibbs.1.t1)/N_gibbs, 
+                                   digits=3)),
+                 ylim=c(1889, 1905))
+  
+    gibbs.2.t1 = coda::mcmc(gibbs.2$t1)
+    trace.plot(gibbs.2$t1[1:first_samples], main=paste(prefix, "t1,", "sigma2.t =", sigma.2))
+    running.mean(gibbs.2$t1[1:first_samples], 
+                 main=paste("Acceptance rate:", 
+                            format(gibbs.2$t1.accept.rate, digits=3),
+                            "\nN_eff/N_act:", 
+                            format(coda::effectiveSize(gibbs.2.t1)/N_gibbs, 
+                                   digits=3)),
+                 ylim=c(1889, 1905))
+  
+    gibbs.3.t1 = coda::mcmc(gibbs.3$t1)
+    trace.plot(gibbs.3$t1[1:first_samples], main=paste(prefix, "t1,", "sigma2.t =", sigma.3))
+    running.mean(gibbs.3$t1[1:first_samples], 
+                 main=paste("Acceptance rate:", 
+                            format(gibbs.3$t1.accept.rate, digits=3),
+                            "\nN_eff/N_act:", 
+                             format(coda::effectiveSize(gibbs.3.t1)/N_gibbs, 
+                                   digits=3)),
+                 ylim=c(1889, 1905))
+  } 
+  else {
+    N_block = 1.0e4L
+    
+    sigma2t.1 = sigma2.t; sigma2beta.1 = sigma2.beta
+    block.1 = run.block.MCMC(N=N_block, 
+                             sigma2.t = sigma2t.1,
+                             sigma2.beta=sigma2beta.1)
 
+    # Only plot t1 and beta-stuff: # Add Density plots at a bottom row?
+    layout_matr = matrix(c(1, 2, 3, 4), 
+                         nrow=2, ncol=2, byrow=F)
+    layout(layout_matr)
+    prefix = "Block:"
+    
+    block1.t1 = coda::mcmc(block.1$t1); block1.beta = coda::mcmc(block.1$beta)
+    trace.plot(block.1$t1[1:first_samples], 
+               main=paste(prefix, "t1,", "sigma2.t =", sigma2t.1))
+    running.mean(block.1$t1[1:(4*first_samples)], 
+                 main=paste("First Block accept rate:", 
+                            format(block.1$first.accept.rate, digits=3),
+                            "\nN_eff/N_act:", 
+                            format(coda::effectiveSize(block1.t1)/N_block, 
+                                   digits=3)))
+    
+    trace.plot(block.1$beta[1:first_samples], 
+               main=paste(prefix, "beta,", "sigma2.beta =", sigma2beta.1))
+    running.mean(block.1$beta[1:(4*first_samples)], 
+                 main=paste("Second Block accept rate:", 
+                            format(block.1$second.accept.rate, digits=3),
+                            "\nN_eff/N_act:", 
+                            format(coda::effectiveSize(block1.beta)/N_block, 
+                                   digits=3)))
+    }
+}
+
+
+mean.hpd.statistics = function(MCMC.res, burn_in=0.2, hpd_prob=0.95) {
+  t1.N = length(MCMC.res$t1)
+  t1.mcmc = coda::mcmc(MCMC.res$t1[floor(burn_in*t1.N):t1.N])
+  t1.mean = mean(t1.mcmc)
+  t1.hpd = coda::HPDinterval(t1.mcmc, probability=hpd_prob)
+  cat(paste("Mean and ", 100*hpd_prob, "% HPD of last ", 100*(1-burn_in),
+              "% of t1 samples:\n", "E[t1] = ", 
+              format(t1.mean, digits=7), ", hpd: (", 
+              format(t1.hpd[1], digits=7), ", ", 
+              format(t1.hpd[2], digits=7), ")\n\n", sep=""))
+  
+  lam0.N = length(MCMC.res$lambda0)
+  lam0.mcmc = coda::mcmc(MCMC.res$lambda0[floor(burn_in*lam0.N):lam0.N])
+  lam0.mean = mean(lam0.mcmc)
+  lam0.hpd = coda::HPDinterval(lam0.mcmc, probability=hpd_prob)
+  cat(paste("Mean and ", 100*hpd_prob, "% HPD of last ", 100*(1-burn_in),
+            "% of lambda0 samples:\n", "E[lambda0] = ", 
+            format(lam0.mean, digits=5), ", hpd: (", 
+            format(lam0.hpd[1], digits=5), ", ", 
+            format(lam0.hpd[2], digits=5), ")\n", sep=""))
+  t.start = boot::coal$date[[1]]
+  mean.disasters.0 = (cumulative.coal.disasters(t1.mean) - 
+                      cumulative.coal.disasters(t.start)) /(t1.mean - t.start)
+  cat(paste("Average number of disasters between t_0 and mean(t_1):", 
+            mean.disasters.0, "\n\n"))
+
+  lam1.N = length(MCMC.res$lambda1)
+  lam1.mcmc = coda::mcmc(MCMC.res$lambda1[floor(burn_in*lam1.N):lam1.N])
+  lam1.mean = mean(lam1.mcmc)
+  lam1.hpd = coda::HPDinterval(lam1.mcmc, probability=hpd_prob)
+  cat(paste("Mean and ", 100*hpd_prob, "% HPD of last ", 100*(1-burn_in),
+            "% of lambda1 samples:\n", "E[lambda1] = ", 
+            format(lam1.mean, digits=5), ", hpd: (", 
+            format(lam1.hpd[1], digits=5), ", ", 
+            format(lam1.hpd[2], digits=5), ")\n\n", sep=""))
+  t.end = boot::coal$date[[length(boot::coal$date)]]
+  mean.disasters.1 = (cumulative.coal.disasters(t.end) - 
+                      cumulative.coal.disasters(t1.mean)) /(t.end - t1.mean)
+  cat(paste("Average number of disasters between mean(t_1) and t_2:", 
+            mean.disasters.1, "\n\n"))
+  
+  beta.N = length(MCMC.res$beta)
+  beta.mcmc = coda::mcmc(MCMC.res$beta[floor(burn_in*beta.N):beta.N])
+  beta.mean = mean(beta.mcmc)
+  beta.hpd = coda::HPDinterval(beta.mcmc, probability=hpd_prob)
+  cat(paste("Mean and ", 100*hpd_prob, "% HPD of last ", 100*(1-burn_in),
+            "% of beta samples:\n", "E[beta] = ", 
+            format(beta.mean, digits=5), ", hpd: (", 
+            format(beta.hpd[1], digits=5), ", ", 
+            format(beta.hpd[2], digits=5), ")\n\n", sep=""))
+  
+  # Cov[\lambda_0, \lambda_1 | x]:
+  cov_lam0_lam_1 = sum((lam0.mcmc - lam0.mean)*(lam1.mcmc - lam1.mean))/
+                      (lam1.N-1)
+  cat(paste("Cov[lam0, lam1]:", format(cov_lam0_lam_1, digits=6)))
+}
 
 main_A = function() {
   set.seed(2)
@@ -650,25 +804,39 @@ main_A = function() {
     scale = max(coal.df) - min(coal.df)
     coal.df = (coal.df - translate)/scale
   }
-
-  # plot.coal.disasters(coal.df)
+  plot.coal.disasters(coal.df)
   
+  ################ Gibbs: ####################
   # Best acceptance rate for 'unif': sigma2.t = 100
   # Best acceptance rate for 'norm': sigma2.t = 25
+  facet.compare.burn.in(gibbs=T, first_samples=1000)
+  
   N_gibbs = 1.0e4L
-  gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=N_gibbs, sigma2.t = 25.0, 
+  gibbs.hybrid.res = run.hybrid.Gibbs.MCMC(N=N_gibbs, sigma2.t = 25.0,
                                            t1.prop="norm")
-
-  # plot.parameter.results(gibbs.hybrid.res)
+  cat(paste("\nGibbs parameter results:\n\n"))
+  mean.hpd.statistics(gibbs.hybrid.res)
+  plot.parameter.results(gibbs.hybrid.res)
   facet.running.means(gibbs.hybrid.res, gibbs=T)
   facet.trace(gibbs.hybrid.res, gibbs=T)
-  
-  N_block = 1.0e5L
-  block.res = run.block.MCMC(sigma2.beta=16.0, N=N_block)
+  mcmc.diagnostics(gibbs.hybrid.res)
 
+  ################# Block: ####################
+  N_block = 1.0e5L
+  block.res = run.block.MCMC(sigma2.t = 25, sigma2.beta=5.0, N=N_block)
+   
+  cat(paste("\nBlock parameter results:\n\n"))
+  mean.hpd.statistics(block.res)
   facet.running.means(block.res, gibbs=F)
   facet.trace(block.res, gibbs=F)
-  
+  mcmc.diagnostics(block.res)
+
+  # Investigate the burn-in properties of the blocking MCMC:
+  facet.compare.burn.in(gibbs=F, sigma2.t = 5.0, sigma2.beta = 0.1)
+  facet.compare.burn.in(gibbs=F, sigma2.t = 25.0, sigma2.beta = 0.5)
+  facet.compare.burn.in(gibbs=F, sigma2.t = 125.0, sigma2.beta = 2.5)
+  facet.compare.burn.in(gibbs=F, sigma2.t = 200.0, sigma2.beta = 5.0)
+
   print(paste("Total samples:", N_block))
   print(paste("Effective sample size, t1, blocking:",
                coda::effectiveSize(block.res$t1)))
@@ -681,8 +849,3 @@ main_A = function() {
 }
 
 main_A()
-# MCMC.res = main_A()
-# t1.res = MCMC.res$t1
-# mcmc.list.t1.res = coda::as.mcmc.list(t1.res, start=1, end=length(t1.res))
-# start(mcmc.t1.res)
-# mc1 = coda::geweke.plot(coda::as.mcmc(t1.res))
