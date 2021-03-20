@@ -134,9 +134,9 @@ marg.post.smooth <- function(etai,N){
     mu <- (solve(Q+I)%*%yt)[i]
     sig <- solve(Q+I)[i,i]
     
-    full_conditional_i[j] = dnorm(etai,mu,sig)
+    full_conditional_i[j] = (2*pi*sig)^(-0.5)*exp(-0.5/sig*(etai-mu)^2)
   }
-  
+
   #Computing the INLA integral
   int_est <- sum(full_conditional_i*marginal_theta_posterior)*6/N
   
@@ -173,7 +173,7 @@ smooth.plot <- function(N,M){
   p <- ggplot(data=smooth_test, aes(x=eta, y=param)) + 
     geom_line() +
     geom_vline(xintercept = -.137174, linetype="dotted", colour="blue") +
-    geom_vline(xintercept = -0.218, linetype="dotted",) +
+    geom_vline(xintercept = -0.214, linetype="dotted",) +
     ggtitle(TeX("INLA estimate for $\\pi(\\eta_{10} | \\textbf{y})$")) +
     xlab(TeX("$\\eta_{10}$")) +
     ylab("") +

@@ -1,4 +1,4 @@
-library(forecast)
+#library(forecast)
 library(tidyverse)
 library(ggplot2)
 library(latex2exp)
@@ -124,6 +124,16 @@ hyperparameter.plot =function(N){
     theme_bw()
   return(p)
 }
- 
+
+
+
+# Density eta -------------------------------------------------------------
+
+etadensplot <- function(N){
+  etas = gibbs(N)$etas[N/2:N,10]
+  d <- density(etas)
+  plot(d)
+  #hist(etas, density = TRUE)
+}
 
 
