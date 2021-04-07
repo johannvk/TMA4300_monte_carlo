@@ -166,6 +166,7 @@ gamma.B.4.sample = function(n, alpha, beta) {
   xs_1 = gamma.B.3.sample(n, alpha)
   return(xs_1/beta)
 }
+gamma.sample = gamma.B.4.sample
 
 # N = 10000
 # gamma.4.result = gamma.B.4.sample(N, alpha=5.02, beta=0.5)
