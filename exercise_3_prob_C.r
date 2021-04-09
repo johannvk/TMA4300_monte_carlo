@@ -27,7 +27,8 @@ EM.step = function(lambdas, z, u, c0, c1) {
 
 l2.norm = function(x) sqrt(sum(x^2))
 
-EM.optimization = function(lambdas, z, u, rtol=1.0e-5, atol=1.0e-3) {
+EM.optimization = function(lambdas, z, u, rtol=1.0e-5, atol=1.0e-3, 
+                           store.iterates=F) {
   # lambdas = c(lam.0, lam.1)
   if (length(lambdas) != 2) {
     stop("length(lambdas) must equal 2.")
@@ -48,32 +49,88 @@ EM.optimization = function(lambdas, z, u, rtol=1.0e-5, atol=1.0e-3) {
   lambdas.next = iterate(lambdas)
   
   # Add storage of the lambda values:
-  storage = cbind(lambdas.prev, lambdas.next)
+  if (store.iterates){
+    storage = cbind(lambdas.prev, lambdas.next)
+  } 
   
   while (l2.norm(lambdas.next - lambdas.prev) > atol) {
     lambdas.prev = lambdas.next
     lambdas.next = iterate(lambdas.next)
     
-    storage = cbind(storage, lambdas.next)
+    if (store.iterates) {
+      storage = cbind(storage, lambdas.next)
+    }
   }
-  
-  return (list(lambdas=lambdas.next, iterates=storage))  
+
+    if (store.iterates){
+    return (list(lambdas=lambdas.next, iterates=storage))  
+  } else {
+    return (lambdas.next)
+  }
 }
 
+
+lambdas.bootstrap = function(B, z, u) {
+  # Sample indices with resampling from the length
+  # of z.
+  n = length(z)
+  indices = sample(1:n, B*n, replace=T)
+  
+  # Sample bootstrap samples in columns:
+  z.boot = matrix(z[indices], nrow=n, ncol=B)
+  u.boot = matrix(u[indices], nrow=n, ncol=B)
+  
+  # Estimate the lambdas (lam0, lam1) B times: 
+  # Store them in one column each.
+  lambdas.boot = matrix(NA, nrow=B, ncol=2)
+
+  init_lambdas = c(1.0, 1.0)
+  for (i in 1:B) {
+    lambdas_i = EM.optimization(init_lambdas, z.boot[ , i], u.boot[ , i])
+    lambdas.boot[i, ] = lambdas_i
+  }
+  
+  return (lambdas.boot)
+}
+
+
+lambdas.log.likelihood = function(lambdas, z, c0) {
+  # c0 = sum(u).
+  n = length(z)
+  lam0 = lambdas[1]; lam1 = lambdas[2]
+  log.lam0 = log(lam0); log.lam1 = log(lam1)
+
+  log.u = -n*(log(lam0 + lam1) - log.lam0) +
+          (log.lam1 - log.lam0)*c0
+  
+  exp.lam0 = exp(-lam0*z); exp.lam1 = exp(-lam1*z)
+  log.z = sum(
+    log(
+          lam0*exp.lam0*(1 - exp.lam1) +
+          lam1*exp.lam1*(1 - exp.lam0)
+        )
+    )
+  
+  log.likelihood = log.u + log.z
+  return (log.likelihood)
+}
+
+
 C1.main = function() {
+  cat(paste("\nProblem C.1:\n"))
   observed = read.data()
   z = observed$z; u = observed$u
   
   # Initial guess:
-  init.lambdas = c(1.0, 1.0)
-  ml.lambdas = EM.optimization(init.lambdas, z, u)
+  init.lambdas = c(5.0, 5.0)
+  ml.lambdas = EM.optimization(init.lambdas, z, u, store.iterates = T)
   
   lambdas = ml.lambdas$lambdas
-  cat(paste("\nlam0: ", format(lambdas[1], digits=5), 
-            " lam1: ", format(lambdas[2], digits=5), 
-            "\n\n", sep="")
+  cat(paste("The EM-algorithm converged on the values:",
+    "\nlambda0: ", format(lambdas[1], digits=5), 
+    ", lambda1: ", format(lambdas[2], digits=5), 
+    "\n\n", sep="")
       )
-  print(dim(ml.lambdas$iterates))
   
   par(mfrow = c(1, 2))
   plot(ml.lambdas$iterates[1, ], ylab="lambda 0", ylim=c(0.8, 4.0))
@@ -88,6 +145,92 @@ C1.main = function() {
          lty = "dashed",         # Modify line type
          lwd = 1.5)
   mtext("Convergence of Exp(lamda) parameters", outer=T,  cex=1.5, line=-2.5)
+  par(mfrow = c(1, 1))
+}
+
+
+C2.main = function() {
+  cat(paste("\nProblem C.2:\n"))
+  
+  observed = read.data()
+  z = observed$z; u = observed$u
+  lambdas.full = EM.optimization(c(1.0, 1.0), z, u)
+  
+  B = 1.0e4L
+  lambdas.boot = lambdas.bootstrap(B, z, u)
+  lam0.boot = mean(lambdas.boot[ , 1])
+  lam1.boot = mean(lambdas.boot[ , 2])
+  
+  bias0 = lam0.boot - lambdas.full[1]
+  bias1 = lam1.boot - lambdas.full[2]
+
+  par(mfrow = c(1, 2))
+  hist(lambdas.boot[ , 1], probability = T, main="Hist. of boot.lam0",
+       xlab="Bootstrapped lambda0 values.")
+  abline(v=lambdas.full[1],  
+         col = "red",            # Modify color
+         lty = "dashed",         # Modify line type
+         lwd = 1.5)
+  abline(v=lam0.boot,  
+         col = "green",          # Modify color
+         lty = "dashed",         # Modify line type
+         lwd = 1.5)
+  cat(paste("The estimated bias of the lambda0 estimate is: ",
+            format(bias0, digits=6), "\n", sep=""))
+  
+  hist(lambdas.boot[ , 2], probability = T, main="Hist. of boot.lam1")
+  abline(v=lambdas.full[2],  
+         col = "red",            # Modify color
+         lty = "dashed",         # Modify line type
+         lwd = 1.5)
+  abline(v=lam1.boot,  
+         col = "green",          # Modify color
+         lty = "dashed",         # Modify line type
+         lwd = 1.5)
+  cat(paste("The estimated bias of the lambda0 estimate is: ",
+            format(bias1, digits=6), "\n", sep=""))
+  par(mfrow = c(1, 1))
+  
+  lambda.estimates.correlation = cor(lambdas.boot[ , 1], lambdas.boot[ , 2])
+  lambdas.est.covar = cov(lambdas.boot)
+
+  cat(paste("\nThe correlation between lambda0 and lambda1 from ", B, 
+            " bootstrap samples, is:\n\t", 
+            format(lambda.estimates.correlation, digits=6), "\n", sep=""))
+  cat(paste("The bootstrapp-estimated covariance matrix for",
+            " (lambda0, lambda1):\n", sep=""))
+  print(lambdas.est.covar)
+}
+
+C3.main = function() {
+  cat(paste("\nProblem C.3:\n"))
+  
+  observed = read.data()
+  z = observed$z; u = observed$u
+  c0 = sum(u)
+  
+  objective = function(lambdas) {
+      lambdas.log.likelihood(lambdas, z, c0)
+  }
+  init.lambdas = c(2.0, 6.0)
+  control = list(fnscale=-1.0)
+  optim.res = optim(init.lambdas, objective, method="L-BFGS-B",
+                    lower=c(0.01, 0.01), upper=c(100.0, 100.0), 
+                    control=control,
+                    hessian=T)
+  # str(optim.res)
+  ml.lambdas = optim.res$par
+  lambdas.est.covar = -solve(optim.res$hessian)
+  
+  cat(paste("The maximum likelihood estimates for (lambda0, lambda1)",
+            " are:\n( ", format(ml.lambdas[1], digits=5), 
+            ", ", format(ml.lambdas[2],digits=5),
+            " )\n", sep=""))
+  cat(paste("The maximum likelihood-estimated covariance matrix for",
+            " (lambda0, lambda1):\n", sep=""))
+  print(lambdas.est.covar)
 }
 
 C1.main()
+C2.main()
+C3.main()
