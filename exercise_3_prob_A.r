@@ -121,7 +121,7 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
   
   # Store the estimated step (beta0, beta1)
   # down the rows:
-  bootstrap.next.step = matrix(NA, nrow=B, ncol=1)  
+  bootstrap.next.step = double(B)  
   
   # Could think of making a time series of length ceil(1.2*n)
   # and then only estimate the beta-coefficients on the last 
@@ -148,11 +148,21 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
     # and the bootstrapped beta-coefficients:
     # noise.i = bootstrap.ts.resid[iid.indices[i]]
     noise.i = full.resid[iid.indices[i]]
-    bootstrap.next.step[i, 1] = next.value(bootstrap.betas, noise.i)
+    bootstrap.next.step[i] = next.value(bootstrap.betas, noise.i)
   }
   
-  hist(bootstrap.next.step[ , 1], breaks=100, probability = T, xlim=c(14, 18))
+  return (bootstrap.next.step[!is.na(bootstrap.next.step)])
 }
+
+
+emp.quantile.interval = function(x, alpha) {
+  # Generate a '(1-alpha)' confidence interval.
+  lower.quant = alpha/2.0
+  upper.quant = 1 - alpha/2.0
+  
+  return (quantile(x, probs=c(lower.quant, upper.quant)))
+}
+  
 
 A1.main = function() {
   time.series = ts(data3A$x)
@@ -204,11 +214,27 @@ A1.main = function() {
 
 
 A2.main = function() {
+  # Think we are meant to use 'newly computed'
+  # residuals from each bootstrap time series
+  # to estimate x_{101} for each bootstrap-run.
+  
+  # Get very (!) wide prediction intervals for 
+  # x_{101} when doing that. Something seems wrong?
+
+  set.seed(2)
+  
   time.series = ts(data3A$x)
   
-  one.step.bootstrap(time.series, include.noise=F, norm="LS")
+  next.steps.boot = one.step.bootstrap(time.series, B=3000, include.noise=T, norm="LA")
   
+  alpha = 0.2
+  emp.conf.interval = emp.quantile.interval(next.steps.boot, alpha)
+  
+  cat("\n95% confidence interval for x_{101}:\n")
+  print(emp.conf.interval)
+
+  hist(next.steps.boot, breaks=100, probability = T, xlim=c(14, 18))
 }
 
-# A1.main()
+A1.main()
 A2.main()
