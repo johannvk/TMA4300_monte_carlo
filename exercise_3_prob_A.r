@@ -34,7 +34,8 @@ beta.LS.bootstrap = function(ts, B=2000, p=2) {
     x0 = ts[start.indices[i]:(start.indices[i] + p - 1)]
     
     # Filter 'n' steps forward, and then remove the initial p steps:
-    bootstrap.ts = ARp.filter(x0, beta.ls, bootstrap.resid[ , i])[-(1:p)]
+    actual_residuals = ls.resid[bootstrap.resid[ , i]]
+    bootstrap.ts = ARp.filter(x0, beta.ls, actual_residuals)[-(1:p)]
     
     # Calculate LS beta coeffiecients on that series:
     betas = ARp.beta.est(bootstrap.ts, p)$LS
@@ -76,7 +77,8 @@ beta.LA.bootstrap = function(ts, B=2000, p=2) {
     x0 = ts[start.indices[i]:(start.indices[i] + p - 1)]
     
     # Filter 'n' steps forward, and then remove the initial p steps:
-    bootstrap.ts = ARp.filter(x0, beta.la, bootstrap.resid[ , i])[-(1:p)]
+    actual_residuals = la.resid[bootstrap.resid[ , i]]
+    bootstrap.ts = ARp.filter(x0, beta.la, actual_residuals)[-(1:p)]
     
     # Calculate LS beta coeffiecients on that series:
     betas = ARp.beta.est(bootstrap.ts, p)$LA
@@ -133,7 +135,8 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
     x0 = time.series[start.indices[i]:(start.indices[i] + p - 1)]
     
     # Filter 'n' steps forward, and then remove the initial p steps:
-    bootstrap.ts = ARp.filter(x0, betas.full, bootstrap.resid[ , i])[-(1:p)]
+    actual_residuals = full.resid[bootstrap.resid[ , i]]
+    bootstrap.ts = ARp.filter(x0, betas.full, actual_residuals)[-(1:p)]
     
     # Calculate beta coeffiecients on that series:
     bootstrap.betas = ARp.beta.est(bootstrap.ts, p)[[norm]]
@@ -143,11 +146,11 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
     
     # Very big residuals:
     # hist(bootstrap.ts.resid, breaks=20, probability = T, main="Boot.ts.residuals")
-      
+    
     # Calculate the next step with a random noise term,
     # and the bootstrapped beta-coefficients:
-    # noise.i = bootstrap.ts.resid[iid.indices[i]]
-    noise.i = full.resid[iid.indices[i]]
+    noise.i = bootstrap.ts.resid[iid.indices[i]]
+    # noise.i = full.resid[iid.indices[i]]
     bootstrap.next.step[i] = next.value(bootstrap.betas, noise.i)
   }
   
@@ -225,9 +228,10 @@ A2.main = function() {
   
   time.series = ts(data3A$x)
   
-  next.steps.boot = one.step.bootstrap(time.series, B=3000, include.noise=T, norm="LA")
+  next.steps.boot = one.step.bootstrap(time.series, B=3000, 
+                                       include.noise=T, norm="LA")
   
-  alpha = 0.2
+  alpha = 0.05
   emp.conf.interval = emp.quantile.interval(next.steps.boot, alpha)
   
   cat("\n95% confidence interval for x_{101}:\n")
