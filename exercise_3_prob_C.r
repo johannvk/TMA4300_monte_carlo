@@ -122,7 +122,7 @@ C1.main = function() {
   z = observed$z; u = observed$u
   
   # Initial guess:
-  init.lambdas = c(5.0, 5.0)
+  init.lambdas = c(1.0, 1.0)
   ml.lambdas = EM.optimization(init.lambdas, z, u, store.iterates = T)
   
   lambdas = ml.lambdas$lambdas
@@ -131,15 +131,17 @@ C1.main = function() {
     ", lambda1: ", format(lambdas[2], digits=5), 
     "\n\n", sep="")
       )
-  
+  num.iterates = length(ml.lambdas$iterates[1, ])
   par(mfrow = c(1, 2))
-  plot(ml.lambdas$iterates[1, ], ylab="lambda 0", ylim=c(0.8, 4.0))
+  plot(ml.lambdas$iterates[1, ], ylab="lambda 0",  # ylim=c(0.8, 4.0), 
+       xlab="Iterations", xlim=c(1, num.iterates))
   abline(h=lambdas[1],  
          col = "red",            # Modify color
          lty = "dashed",         # Modify line type
          lwd = 1.5)   
   
-  plot(ml.lambdas$iterates[2, ], ylab="lambda 1", ylim=c(0.8, 10.0))
+  plot(ml.lambdas$iterates[2, ], ylab="lambda 1", # ylim=c(0.8, 10.0), 
+       xlab="Iterations", xlim=c(1, num.iterates))
   abline(h=lambdas[2],  
          col = "red",            # Modify color
          lty = "dashed",         # Modify line type
@@ -165,28 +167,29 @@ C2.main = function() {
   bias1 = lam1.boot - lambdas.full[2]
 
   par(mfrow = c(1, 2))
-  hist(lambdas.boot[ , 1], probability = T, main="Hist. of boot.lam0",
-       xlab="Bootstrapped lambda0 values.")
+  hist(lambdas.boot[ , 1], probability = T, main="Hist. of lambda0",
+       xlab="Bootstrapped lambda0 values.", breaks=50)
   abline(v=lambdas.full[1],  
          col = "red",            # Modify color
-         lty = "dashed",         # Modify line type
-         lwd = 1.5)
+         # lty = "dashed",         # Modify line type
+         lwd = 2.0)
   abline(v=lam0.boot,  
-         col = "green",          # Modify color
-         lty = "dashed",         # Modify line type
-         lwd = 1.5)
+         col = "blue",          # Modify color
+         # lty = "dashed",         # Modify line type
+         lwd = 2.0)
   cat(paste("The estimated bias of the lambda0 estimate is: ",
             format(bias0, digits=6), "\n", sep=""))
   
-  hist(lambdas.boot[ , 2], probability = T, main="Hist. of boot.lam1")
+  hist(lambdas.boot[ , 2], probability = T, main="Hist. of lambda1",
+       xlab="Bootstrapped lambda1 values.", breaks=50)
   abline(v=lambdas.full[2],  
          col = "red",            # Modify color
-         lty = "dashed",         # Modify line type
-         lwd = 1.5)
+         # lty = "dashed",         # Modify line type
+         lwd = 2.0)
   abline(v=lam1.boot,  
-         col = "green",          # Modify color
-         lty = "dashed",         # Modify line type
-         lwd = 1.5)
+         col = "blue",          # Modify color
+         # lty = "dashed",         # Modify line type
+         lwd = 2.0)
   cat(paste("The estimated bias of the lambda0 estimate is: ",
             format(bias1, digits=6), "\n", sep=""))
   par(mfrow = c(1, 1))
@@ -226,7 +229,7 @@ C3.main = function() {
             " are:\n( ", format(ml.lambdas[1], digits=5), 
             ", ", format(ml.lambdas[2],digits=5),
             " )\n", sep=""))
-  cat(paste("The maximum likelihood-estimated covariance matrix for",
+  cat(paste("The 'maximum likelihood'-estimated covariance matrix for",
             " (lambda0, lambda1):\n", sep=""))
   print(lambdas.est.covar)
 }
