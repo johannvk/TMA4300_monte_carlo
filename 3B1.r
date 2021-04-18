@@ -23,15 +23,19 @@ p <- ggplot(bilirubin, aes(x=pers, y=log(meas))) +
 
 # F-test ------------------------------------------------------------------
 
-
+# Fitting a linear model
 linear_model <- lm(log(meas)~pers,data=bilirubin)
 summary(linear_model)
 
+#Extracting the F-statistic
 Fval <- summary(linear_model)$fstatistic[1]
+
+#Computing the p-value
+pvalue <- 1 - pf(Fval,2,26)   
 
 # Permutation function ----------------------------------------------------
 
-permtest <- function(){
+permTest <- function(){
   
   #Reading in the data
   bilirubin <- read.table("ex3-additional-files/bilirubin.txt",header=T)
@@ -50,10 +54,30 @@ permtest <- function(){
   return(Fval)
 }
 
-Fs = vector(length = 999)
-for (i in (1:999)) {
-  Fs[i] <- permtest()
+Fs = vector(length = 1000)
+Fs[1] = Fval
+for (i in (2:1000)) {
+  Fs[i] <- permTest()
 }
 
-pval <- sum(Fs>Fval)/999
+pval <- sum(Fs>=Fval)/1000
 pval
+
+p2 <- ggplot(data=data_frame(Fs), aes(Fs)) + 
+  geom_histogram(data=subset(data_frame(Fs),Fs<= Fval), bins = 30)+
+  geom_histogram(data=subset(data_frame(Fs),Fs>Fval),fill ="red", bins = 30) +
+  xlim(0,7.5) +
+  labs(x = "F statistic", y = "Count") + 
+  theme_bw()
+
+# p2 <- ggplot(data=subset(data_frame(Fs),, aes(Fs)) + 
+#                geom_histogram(bins = 20)+
+#                xlim(0,7.5) +
+#                geom_vline(xintercept = Fval, color="blue") +
+#                theme_bw()
+#              
+# p2 <- ggplot(data=data_frame(Fs), aes(Fs)) + 
+#   geom_density()+
+#   theme_bw()
+
+
