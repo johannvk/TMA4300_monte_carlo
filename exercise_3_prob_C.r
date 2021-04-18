@@ -48,22 +48,28 @@ EM.optimization = function(lambdas, z, u, rtol=1.0e-5, atol=1.0e-3,
   lambdas.prev = lambdas
   lambdas.next = iterate(lambdas)
   
+  l2.difference = l2.norm(lambdas.next - lambdas.prev)
+  
   # Add storage of the lambda values:
   if (store.iterates){
-    storage = cbind(lambdas.prev, lambdas.next)
+    stored.lambdas = cbind(lambdas.prev, lambdas.next)
+    stored.l2.diffs = c(l2.difference)
   } 
   
-  while (l2.norm(lambdas.next - lambdas.prev) > atol) {
+  while (l2.difference > atol) {
     lambdas.prev = lambdas.next
     lambdas.next = iterate(lambdas.next)
-    
+    l2.difference = l2.norm(lambdas.next - lambdas.prev)
+
     if (store.iterates) {
-      storage = cbind(storage, lambdas.next)
+      stored.lambdas = cbind(stored.lambdas, lambdas.next)
+      stored.l2.diffs = c(stored.l2.diffs, l2.difference)
     }
   }
 
-    if (store.iterates){
-    return (list(lambdas=lambdas.next, iterates=storage))  
+  if (store.iterates){
+    return (list(lambdas=lambdas.next, iterates=stored.lambdas, 
+                 l2.diffs=stored.l2.diffs))  
   } else {
     return (lambdas.next)
   }
@@ -132,6 +138,24 @@ C1.main = function() {
     "\n\n", sep="")
       )
   num.iterates = length(ml.lambdas$iterates[1, ])
+  
+  # Plot L2-norm difference per iteration, on log-scale:
+  par(mfrow = c(1, 1))
+  l2.diffs = ml.lambdas$l2.diffs
+  l2.conv.df = data.frame(x=1:(num.iterates-1), y=l2.diffs)
+  l2.conv.lm = lm(log(y, base=exp(1)) ~ x, data=l2.conv.df)
+  conv.slope = coef(l2.conv.lm)[["x"]]
+
+  plot(l2.conv.df$x, log(l2.diffs, base=exp(1)), 
+       main="EM Convergence in L2-Norm", xlab="Iterations",
+       ylab="ln(|| lambdas^(t+1) - lambdas^(t) ||_2)")
+  abline(l2.conv.lm, col="steelblue")
+  text(x = 8, y = -1,                # Text with different color & size
+       paste("Slope:", format(conv.slope, digits=4)),
+       col = "#1b98e0"
+       )
+
+  # Convergence of each parameter:
   par(mfrow = c(1, 2))
   plot(ml.lambdas$iterates[1, ], ylab="lambda 0",  # ylim=c(0.8, 4.0), 
        xlab="Iterations", xlim=c(1, num.iterates))
