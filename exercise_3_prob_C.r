@@ -187,6 +187,10 @@ C2.main = function() {
   lam0.boot = mean(lambdas.boot[ , 1])
   lam1.boot = mean(lambdas.boot[ , 2])
   
+  cat(paste("Bootstrap Mean:\nlambda0: ", 
+            format(lam0.boot, digits=5), "\tlambda1: ", 
+            format(lam1.boot, digits=5), "\n", sep=""))
+  
   bias0 = lam0.boot - lambdas.full[1]
   bias1 = lam1.boot - lambdas.full[2]
 
@@ -247,7 +251,7 @@ C3.main = function() {
                     hessian=T)
   # str(optim.res)
   ml.lambdas = optim.res$par
-  lambdas.est.covar = -solve(optim.res$hessian)
+  lambdas.est.covar = solve(-optim.res$hessian)
   
   cat(paste("The maximum likelihood estimates for (lambda0, lambda1)",
             " are:\n( ", format(ml.lambdas[1], digits=5), 
