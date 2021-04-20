@@ -94,8 +94,6 @@ beta.LA.bootstrap = function(ts, B=2000, p=2) {
 
 one.step.bootstrap = function(time.series, B=2000, p=2, 
                               include.noise=T, norm=c("LA", "LS")) {
-  # If we include random noise, it totally swamps the prediction
-  # uncertainty?
   
   n = length(time.series)
   last.p.values = time.series[(n - p + 1):n]
@@ -113,7 +111,7 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
   # Has length (n - p), assumed i.i.d:
   full.resid = ARp.resid(time.series, betas.full)
   
-  # Generate n i.i.d residuals down B columns:
+  # Generate n i.i.d residuals indices down B columns:
   bootstrap.resid = matrix(sample(1:(n-p), B*n, replace=T), 
                            nrow=n, ncol=B)
   
@@ -127,9 +125,6 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
   # down the rows:
   bootstrap.next.step = double(B)  
   
-  # Could think of making a time series of length ceil(1.2*n)
-  # and then only estimate the beta-coefficients on the last 
-  # n elements, to hopefully avoid problems of non-stationarity.
   for (i in 1:B) {
     # Generate an AR(p) time series of length n:
     # Use the originally estimated "betas.full" coefficients
@@ -146,16 +141,12 @@ one.step.bootstrap = function(time.series, B=2000, p=2,
     # Find new bootstrap residulas, length = (n - p):
     bootstrap.ts.resid = ARp.resid(bootstrap.ts, bootstrap.betas) 
     
-    # Very big residuals:
-    # hist(bootstrap.ts.resid, breaks=20, probability = T, main="Boot.ts.residuals")
-    
     # Calculate the next step with a random noise term,
     # and the bootstrapped beta-coefficients:
     noise.i = bootstrap.ts.resid[iid.indices[i]]
-    # noise.i = full.resid[iid.indices[i]]
     bootstrap.next.step[i] = next.value(bootstrap.betas, noise.i)
   }
-  
+  #Returns bootstrapped one step evolution
   return (bootstrap.next.step[!is.na(bootstrap.next.step)])
 }
 
@@ -209,16 +200,16 @@ A1.main = function() {
   
   pLSbeta0 <- ggplot(data.frame(betas=LS.betas.bootstrap[ , 1]), aes(x=betas)) + 
     geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
-    xlab(TeX("$\\beta_0$")) + 
+    xlab(TeX("$\\beta_1$")) + 
     ylab("Density") +
-    labs(title = TeX("LS $\\beta_0^*$")) + 
+    labs(title = TeX("LS $\\beta_1^*$")) + 
     theme_bw()
   print(pLSbeta0)
   pLSbeta1 <- ggplot(data.frame(betas=LS.betas.bootstrap[ , 2]), aes(x=betas)) + 
     geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
-    xlab(TeX("$\\beta_1$")) + 
+    xlab(TeX("$\\beta_2$")) + 
     ylab("Density") +
-    labs(title = TeX("LS $\\beta_1^*$")) + 
+    labs(title = TeX("LS $\\beta_2^*$")) + 
     theme_bw()
   print(pLSbeta1)
   
@@ -249,16 +240,16 @@ A1.main = function() {
   
   pLAbeta0 <- ggplot(data.frame(betas=LA.betas.bootstrap[ , 1]), aes(x=betas)) + 
     geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
-    xlab(TeX("$\\beta_0$")) + 
+    xlab(TeX("$\\beta_1$")) + 
     ylab("Density") +
-    labs(title = TeX("LA $\\beta_0^*$")) + 
+    labs(title = TeX("LA $\\beta_1^*$")) + 
     theme_bw()
   print(pLAbeta0)
   pLAbeta1 <- ggplot(data.frame(betas=LA.betas.bootstrap[ , 2]), aes(x=betas)) + 
     geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
-    xlab(TeX("$\\beta_1$")) + 
+    xlab(TeX("$\\beta_2$")) + 
     ylab("Density") +
-    labs(title = TeX("LA $\\beta_1^*$")) + 
+    labs(title = TeX("LA $\\beta_2^*$")) + 
     theme_bw()
   print(pLAbeta1)
   
@@ -274,10 +265,49 @@ A2.main = function() {
   # Get very (!) wide prediction intervals for 
   # x_{101} when doing that. Something seems wrong?
 
-  set.seed(2)
+  set.seed(8)
   
   time.series = ts(data3A$x)
   
+  print("LS:")
+  next.steps.boot = one.step.bootstrap(time.series, B=3000, 
+                                       include.noise=T, norm="LS")
+  
+  alpha = 0.05
+  emp.conf.interval = emp.quantile.interval(next.steps.boot, alpha)
+  
+  cat("\n95% confidence interval for x_{101}:\n")
+  print(emp.conf.interval)
+  
+  hist(next.steps.boot, breaks=100, probability = T, xlim=c(14, 18))
+  
+  #The coolest plot:
+  x_101 = 1.5528106*data3A$x[100]-0.5680178*data3A$x[99]
+  tsPred = c(data3A$x,x_101)
+  print(paste("x_101",x_101))
+  print(paste("mean",mean(next.steps.boot)))
+  lowerConfint = c(data3A$x,emp.conf.interval[1])
+  upperConfint = c(data3A$x,emp.conf.interval[2])
+    
+    pTS <- ggplot(data.frame(ts=tsPred, id=(1:101)), aes(y=ts,x=id)) +
+    geom_line() + 
+      geom_ribbon(data=data.frame(t=(1:101),lowerConfint=lowerConfint,upperConfint=upperConfint),
+                  aes(x=t, ymin=lowerConfint,ymax=upperConfint),
+                  inherit.aes = FALSE, alpha=0.3) +
+    xlab(TeX("$t$")) + 
+    xlim(80,101) +
+    ylim(0,60) + 
+    ylab(TeX("$x_t$")) +
+    theme_bw()
+  print(pTS)
+  
+  # geom_ribbon(data=mc.eta, aes(x=t, ymin=conf_int_lower,ymax=conf_int_upper),
+  #             inherit.aes = FALSE, alpha=0.3)
+  
+  
+  
+  
+  print("LA:")
   next.steps.boot = one.step.bootstrap(time.series, B=3000, 
                                        include.noise=T, norm="LA")
   
@@ -287,8 +317,7 @@ A2.main = function() {
   cat("\n95% confidence interval for x_{101}:\n")
   print(emp.conf.interval)
 
-  hist(next.steps.boot, breaks=100, probability = T, xlim=c(14, 18))
 }
 
-A1.main()
+#A1.main()
 A2.main()
