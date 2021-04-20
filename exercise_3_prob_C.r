@@ -1,3 +1,4 @@
+library(latex2exp)
 
 read.data = function() {
   z = read.table("ex3-additional-files/z.txt", 
@@ -148,7 +149,8 @@ C1.main = function() {
 
   plot(l2.conv.df$x, log(l2.diffs, base=exp(1)), 
        main="EM Convergence in L2-Norm", xlab="Iterations",
-       ylab="ln(|| lambdas^(t+1) - lambdas^(t) ||_2)")
+       ylab=TeX("$\\ln(|| \\lambda^{(t+1)} - \\lambda^{(t)} ||_{2})$"),
+       mgp=c(2, 0.8, 0.5), las=1, ylim=c(-8, 2))
   abline(l2.conv.lm, col="steelblue")
   text(x = 8, y = -1,                # Text with different color & size
        paste("Slope:", format(conv.slope, digits=4)),
