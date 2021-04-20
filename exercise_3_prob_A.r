@@ -1,4 +1,6 @@
 library(forecast)
+library(ggplot2)
+library(latex2exp)
 
 source("ex3-additional-files/probAdata.R")
 source("ex3-additional-files/probAhelp.R")
@@ -171,6 +173,13 @@ A1.main = function() {
   time.series = ts(data3A$x)
   plot(time.series)
   
+  pTS <- ggplot(data.frame(ts=data3A$x, id=(1:100)), aes(y=ts,x=id)) +
+    geom_line() + 
+    xlab(TeX("$t$")) + 
+    ylab(TeX("$x_t$")) +
+    theme_bw()
+  print(pTS)
+  
   betas.full = ARp.beta.est(time.series, p=2)
   
   LS.betas = betas.full$LS
@@ -178,7 +187,15 @@ A1.main = function() {
   LS.bias.est = colMeans(LS.betas.bootstrap) - LS.betas
   
   ls.resid.full = ARp.resid(time.series, LS.betas)
-  hist(ls.resid.full, breaks=50, probability = T, main="LS Residuals")
+  #hist(ls.resid.full, breaks=50, probability = T, main="LS Residuals")
+  
+  pLSres <- ggplot(data.frame(res=ls.resid.full), aes(x=res)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("LS $\\hat{\\epsilon}_t$")) + 
+    ylab("Density") +
+    labs(title = "LS Residuals") + 
+    theme_bw()
+  print(pLSres)
   
   cat("\nOriginal LS.betas:\n")
   print(LS.betas)
@@ -188,10 +205,22 @@ A1.main = function() {
   
   cat(paste("\n", "Bootstrapped LS.betas covariance:\n", sep=""))
   print(cov(LS.betas.bootstrap))
-  par(mfrow = c(1, 2))
-  hist(LS.betas.bootstrap[ , 1], probability = T, main="LS.beta0")
-  hist(LS.betas.bootstrap[ , 2], probability = T, main="LS.beta1")
-  par(mfrow= c(1, 1))
+  
+  
+  pLSbeta0 <- ggplot(data.frame(betas=LS.betas.bootstrap[ , 1]), aes(x=betas)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("$\\beta_0$")) + 
+    ylab("Density") +
+    labs(title = TeX("LS $\\beta_0^*$")) + 
+    theme_bw()
+  print(pLSbeta0)
+  pLSbeta1 <- ggplot(data.frame(betas=LS.betas.bootstrap[ , 2]), aes(x=betas)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("$\\beta_1$")) + 
+    ylab("Density") +
+    labs(title = TeX("LS $\\beta_1^*$")) + 
+    theme_bw()
+  print(pLSbeta1)
   
   LA.betas.bootstrap = beta.LA.bootstrap(time.series)
   LA.betas = betas.full$LA
@@ -199,8 +228,16 @@ A1.main = function() {
   LA.bias.est = colMeans(LA.betas.bootstrap) - LA.betas
 
   la.resid.full = ARp.resid(time.series, LA.betas)
-  hist(ls.resid.full, breaks=50, probability = T, main="LA Residuals")
-    
+  #hist(ls.resid.full, breaks=50, probability = T, main="LA Residuals")
+  
+  pLAres <- ggplot(data.frame(res=ls.resid.full), aes(x=res)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("LA $\\hat{\\epsilon}_t$")) + 
+    ylab("Density") +
+    labs(title = "LA Residuals") + 
+    theme_bw()
+  print(pLAres)
+  
   cat("\n\nOriginal LA.betas:\n")
   print(LA.betas)
   
@@ -209,10 +246,23 @@ A1.main = function() {
   
   cat(paste("\n", "Bootstrapped LA.betas covariance:\n", sep=""))
   print(cov(LA.betas.bootstrap))
-  par(mfrow = c(1, 2))
-  hist(LA.betas.bootstrap[ , 1], probability = T, main="LA.beta0")
-  hist(LA.betas.bootstrap[ , 2], probability = T, main="LA.beta1")
-  par(mfrow= c(1, 1))
+  
+  pLAbeta0 <- ggplot(data.frame(betas=LA.betas.bootstrap[ , 1]), aes(x=betas)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("$\\beta_0$")) + 
+    ylab("Density") +
+    labs(title = TeX("LA $\\beta_0^*$")) + 
+    theme_bw()
+  print(pLAbeta0)
+  pLAbeta1 <- ggplot(data.frame(betas=LA.betas.bootstrap[ , 2]), aes(x=betas)) + 
+    geom_histogram(bins=40, aes(y=..count../sum(..count..))) + 
+    xlab(TeX("$\\beta_1$")) + 
+    ylab("Density") +
+    labs(title = TeX("LA $\\beta_1^*$")) + 
+    theme_bw()
+  print(pLAbeta1)
+  
+  
 }
 
 
